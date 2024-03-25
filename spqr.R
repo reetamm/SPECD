@@ -1,3 +1,4 @@
+source('adam.R')
 library(splines2)
 
 basis <- function(x,L,integral=FALSE){  
