@@ -1,19 +1,14 @@
 # Conditional quantile function for precip
 rm(list=ls())
-library(gsarima)
 library(SPQR)
+library(mvtnorm)
 q1 <- function(u1,y0){  
+    n = length(u)
+    
     a <- 3+0.5*y0
     b <- 4-1.0*y0
     y <- qgamma(u1,a,b)
     return(y)}
-
-# Conditional inverse quantile function for precip
-p1 <- function(y1,y0){
-    a <- 3+0.5*y0
-    b <- 4-1.0*y0
-    u <- pgamma(y1,a,b)
-    return(u)}
 
 # Conditional quantile function for temperature
 q2 <- function(u2,y0,y1){
@@ -22,29 +17,47 @@ q2 <- function(u2,y0,y1){
     y <- qnorm(u2,m,s)
     return(y)}
 
-# Conditional inverse quantile function for temperature
-p2 <- function(y2,y0,y1){
-    m <- 1.0-0.5*y1 + 0.5*y0*log(y1)
-    s <- 0.2*y1*(1-y0)+.2
-    u <- pnorm(y2,m,s)
-    return(u)}
-
+# data generation
 set.seed(919)
-n  <- 20000
-y.sim1 <- garsim(n=n*0.6,phi=0.6, sd=sqrt(1))
-u1 = pnorm(y.sim1)
-y.sim1 <- garsim(n=n*0.4,phi=0.3, sd=sqrt(1))
-u1 = c(u1,pnorm(y.sim1))
-y.sim2 <- garsim(n=n*0.6,phi=0.8, sd=sqrt(1))
-u2 = pnorm(y.sim2)
-y.sim2 <- garsim(n=n*0.4,phi=0.5, sd=sqrt(1))
-u2 = c(u2,pnorm(y.sim2))
-
-y0 <- c(rep(1,n*.6),rep(0,n*.4))
-y1 <- q1(u1,y0)
-y2 <- q2(u2,y0,y1)
+n <- 10000                  #define length of simulation
 n0 = n*0.4
 n1 = n*0.6
+Sigma = matrix(c(1,0.5,0.5,1),nrow = 2)
+yy = pnorm(rmvnorm(n0,sigma = Sigma))
+cor(yy)
+aa = matrix(0,nrow = n0,ncol = 2)
+
+aa[1,] = yy[1,]
+for(i in 2:n0)
+    aa[i,] = c(0.3,0.5)*aa[i-1,] + c(0.7,0.5)*yy[i,]
+
+cor(aa[-1,1],aa[-n0,1])
+cor(aa[-1,2],aa[-n0,2])
+cor(aa)
+
+Sigma = matrix(c(1,0.6,0.6,1),nrow = 2)
+yy = pnorm(rmvnorm(n1,sigma = Sigma))
+cor(yy)
+bb = matrix(0,nrow = n1,ncol = 2)
+
+bb[1,] = bb[1,]
+for(i in 2:n1)
+    bb[i,] = c(0.6,0.8)*bb[i-1,] + c(0.4,0.2)*yy[i,]
+
+cor(bb[-1,1],bb[-n1,1])
+cor(bb[-1,2],bb[-n1,2])
+cor(bb)
+
+
+y0 <- c(rep(1,n*.6),rep(0,n*.4))
+u1 = c(aa[,2],bb[,2])
+u2 = c(aa[,1],bb[,1])
+summary(u1)
+summary(u2)
+
+y1 <- q1(u1,y0)
+y2 <- q2(u2,y0,y1)
+plot(y1,y2,col=y0+1)
 
 y11 = y1[y0==1]
 x11 = y11[c(n1,1:(n1-1))]
@@ -55,6 +68,8 @@ cor(cbind(y10,x10))
 y1 = c(y11,y10)
 x1 = c(x11,x10)
 X1 = cbind(x1,y0)
+
+
 control <- list(iter = 300)
 fit.y1.map.ts <- SPQR(X = X1, Y = y1, method = "MAP", control = control, normalize = T, verbose = T,use.GPU=T,
                       n.hidden = c(30,20), activation = 'relu')
@@ -174,27 +189,27 @@ for(i in 1:n){
     cdf.y2.mle[i] <- predict(fit.y2.mle,   X = X2[i,c(2,4)], Y=y2[i], type = "CDF")    
     print(i)
 }
-qout2 <- cdf.y2.mle.ts#[80001:100000]
-adjust = which(qout2>0.99999)
-qout2[adjust] = 0.99999
-max(qout2)
+qout21 <- cdf.y2.mle.ts
+qout22 <- cdf.y2.mle
+adjust = which(qout21>0.99999)
+qout21[adjust] = 0.99999
+adjust = which(qout22>0.99999)
+qout22[adjust] = 0.99999
+
 qf.y2.mle.ts = rep(NA,n)
 qf.y2.mle = rep(NA,n)
 x_pred = c(X2[1,1],qf.y1.mle.ts[1],X2[1,3],1)
-qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout2[1])    
-qf.y2.mle[1]    <- predict(fit.y2.mle,      X = cbind(X2[1,2],1),          type = "QF",tau=qout2[1])
+qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred,             type = "QF",tau=qout21[1])    
+qf.y2.mle[1]    <- predict(fit.y2.mle,      X = cbind(X2[1,2],1),   type = "QF",tau=qout22[1])
 for(i in 2:n){
     print(i)
     if(i!=12001)
         x_pred = c(qf.y2.mle.ts[i-1],qf.y1.mle.ts[i],qf.y1.mle.ts[i-1],1)
     if(i==12001)
         x_pred = c(X2[i,1],qf.y1.mle.ts[i],qf.y1.mle.ts[i-1],1)
-    # qf.y1.map.ts[i] <- predict(fit.y1.map.ts,   X = X_pred[i,], type = "QF",tau=qout[i])    
-    # qf.y1.map[i]    <- predict(fit.y1.map,      X = 1,          type = "QF",tau=qout[i])    
     
-    # qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout2[i])
-    # qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = c(X[i,1],1), type = "QF",tau=qout[i])
-    qf.y2.mle[i]    <- predict(fit.y2.mle,      X = cbind(X2[i,2],1),          type = "QF",tau=qout2[i])
+    qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred,             type = "QF",tau=qout21[i])
+    qf.y2.mle[i]    <- predict(fit.y2.mle,      X = cbind(X2[i,2],1),   type = "QF",tau=qout22[i])
     
 }
 plot(y2,qf.y2.mle.ts,col=y0+1)
