@@ -48,28 +48,20 @@ X1 = cbind(x1,y0)
 control <- list(iter = 300, batch.size = 1000, lr = 0.01)
 fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
                       n.hidden = c(30,20), activation = 'relu',n.knots = 15)
-fit.y1.map.ts <- SPQR(X = X1, Y = y1, method = "MAP", control = control, normalize = T, verbose = T,use.GPU=T,
-                      n.hidden = c(30,20), activation = 'relu',n.knots = 15)
 
 cdf.y1.mle.ts = rep(NA,n)
-cdf.y1.map.ts = rep(NA,n)
 for(i in 1:n){
     cdf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1[i,], Y=y1[i], type = "CDF")    
-    cdf.y1.map.ts[i] <- predict(fit.y1.map.ts,   X = X1[i,], Y=y1[i], type = "CDF")    
     print(i)
 }
 
 qout11 <- cdf.y1.mle.ts
-qout12 <- cdf.y1.map.ts
-adjust = which(qout11>0.99999 & qout12>0.99999)
+adjust = which(qout11>0.99999)
 qout11[adjust] = 0.99999
-qout12[adjust] = 0.99999
 
 qf.y1.mle.ts = rep(NA,n)
-qf.y1.map.ts = rep(NA,n)
 x_pred = c(X1[1,1],1)
 qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
-qf.y1.map.ts[1] <- predict(fit.y1.map.ts,   X = x_pred, type = "QF",tau=qout11[1])    
 for(i in 2:n){
     print(i)
     if(i==12001)
@@ -77,23 +69,14 @@ for(i in 2:n){
     if(i!=12001)
         x_pred = c(qf.y1.mle.ts[i-1],1)
     qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
-    qf.y1.map.ts[i] <- predict(fit.y1.map.ts,   X = x_pred, type = "QF",tau=qout12[i])
 }
-par(mfrow= c(1,2))
 plot(y1,qf.y1.mle.ts,col=y0+1, main = 'MLE-TS')
 abline(0,1)
-plot(y1,qf.y1.map.ts,col=y0+1, main = 'MAP-TS')
-abline(0,1)
-par(mfrow= c(1,1))
 
 summary(qf.y1.mle.ts[y0==0])
-summary(qf.y1.map.ts[y0==0])
 summary(qf.y1.mle.ts[y0==1])
-summary(qf.y1.map.ts[y0==1])
 cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-8000])
-cor(qf.y1.map.ts[y0==0][-1],qf.y1.map.ts[y0==0][-8000])
 cor(qf.y1.mle.ts[y0==1][-1],qf.y1.mle.ts[y0==1][-12000])
-cor(qf.y1.map.ts[y0==1][-1],qf.y1.map.ts[y0==1][-12000])
 
 summary(y1[y0==1])
 summary(y1[y0==0])
@@ -101,13 +84,11 @@ summary(y1[y0==0])
 d0 <-density(y1[y0==0]) 
 d1 <-density(y1[y0==1]) 
 d2 <- density(qf.y1.mle.ts[y0==0])
-d3 <- density(qf.y1.map.ts[y0==0])
 plot(d0,col=1,ylim=range(c(d0$y,d1$y)),ylab="Y1",main="Y1")
 lines(d1,col=2)
 lines(d2,col=3,lty=2)
-lines(d3,col=4,lty=3)
 
-legend("topright",c("Model","Observations",'MLE-TS','MAP-TS'),
+legend("topright",c("Model","Observations",'MLE-TS'),
        col=1:6,lwd=2,bty="n",lty=c(1,1,2,3))
 
 
@@ -126,30 +107,22 @@ head(X2)
 head(y2)
 fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
                       n.hidden = c(20,10), activation = 'relu',n.knots = 20)
-fit.y2.map.ts <- SPQR(X = X2, Y = y2, method = "MAP", control = control, normalize = T, verbose = T,use.GPU=T,
-                      n.hidden = c(20,10), activation = 'relu',n.knots = 20)
+
 plotGOF(fit.y2.mle.ts)
-plotGOF(fit.y2.map.ts)
 cdf.y2.mle.ts = rep(NA,n)
-cdf.y2.map.ts = rep(NA,n)
 for(i in 1:n){
     cdf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2[i,], Y=y2[i], type = "CDF")    
-    cdf.y2.map.ts[i] <- predict(fit.y2.map.ts,   X = X2[i,], Y=y2[i], type = "CDF")    
     print(i)
 }
 
 qout21 <- cdf.y2.mle.ts
-qout22 <- cdf.y2.map.ts
 adjust = which(qout21>0.99999)
 qout21[adjust] = 0.99999
-adjust = which(qout22>0.99999)
-qout22[adjust] = 0.99999
+
 
 qf.y2.mle.ts = rep(NA,n)
-qf.y2.map.ts = rep(NA,n)
 x_pred = c(X2[1,1],qf.y1.mle.ts[1],X2[1,3],1)
 qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[1])    
-qf.y2.map.ts[1] <- predict(fit.y2.map.ts,   X = x_pred, type = "QF",tau=qout22[1])    
 for(i in 2:n){
     print(i)
     if(i!=12001)
@@ -157,23 +130,15 @@ for(i in 2:n){
     if(i==12001)
         x_pred = c(X2[i,1],qf.y1.mle.ts[i],X2[i,3],1)
     qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
-    qf.y2.map.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout22[i])
 }
-par(mfrow= c(1,2))
 plot(y2,qf.y2.mle.ts,col=y0+1, main = 'MLE-TS')
 abline(0,1)
-plot(y2,qf.y2.map.ts,col=y0+1, main = 'MAP-TS')
-abline(0,1)
-par(mfrow= c(1,1))
+
 
 summary(qf.y2.mle.ts[y0==0])
-summary(qf.y2.map.ts[y0==0])
 summary(qf.y2.mle.ts[y0==1])
-summary(qf.y2.map.ts[y0==1])
 cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-8000])
-cor(qf.y2.map.ts[y0==0][-1],qf.y2.map.ts[y0==0][-8000])
 cor(qf.y2.mle.ts[y0==1][-1],qf.y2.mle.ts[y0==1][-12000])
-cor(qf.y2.map.ts[y0==1][-1],qf.y2.map.ts[y0==1][-12000])
 
 summary(y2[y0==1])
 summary(y2[y0==0])
@@ -181,12 +146,11 @@ summary(y2[y0==0])
 d0 <-density(y2[y0==0]) 
 d1 <-density(y2[y0==1]) 
 d2 <- density(qf.y2.mle.ts[y0==0])
-d3 <- density(qf.y2.map.ts[y0==0])
 plot(d0,col=1,ylim=range(c(d0$y,d1$y)),ylab="Y2",main="Y2")
 lines(d1,col=2)
 lines(d2,col=2,lty=2)
-lines(d3,col=3,lty=3)
 
-legend("topright",c("Model","Observations",'MLE-TS','MAP-TS'),
+legend("topright",c("Model","Observations",'MLE-TS'),
        col=1:6,lwd=2,bty="n",lty=c(1,1,2,3))
 
+plot(qf.y1.mle.ts,qf.y2.mle.ts,col = y0+1)
