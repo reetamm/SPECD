@@ -150,6 +150,21 @@ lines(d2,col=3,lty=2)
 legend("topright",c("Model","Observations",'MLE-TS'),
        col=1:6,lwd=2,bty="n",lty=c(1,1,2,3))
 ```
+
+## Plot of model vs. calibrated precip
+```{r}
+start = 51
+end = 100
+maxy = 1.10*max(y1[(12001+start):(12000+end)],qf.y1.mle.ts[(12001+start):(12000+end)])
+miny = 0.90*min(y1[(12001+start):(12000+end)],qf.y1.mle.ts[(12001+start):(12000+end)])
+
+plot(start:end,y1[(12000+start):(12000+end)],col=1,type='b',pch=20,ylim=c(miny,maxy),
+     ylab = 'Precip')
+lines(start:end,qf.y1.mle.ts[(12000+start):(12000+end)],col=2,type = 'b',pch=20)
+legend("topleft",c("Model",'calibrated'),
+       col=1:2,lwd=2,bty="n")
+```
+
 ## Bias correction for the conditional distribution of temperature
 ```{r}
 # Prep the data
@@ -226,3 +241,16 @@ plot(qf.y1.mle.ts,qf.y2.mle.ts,col = y0+1)
 
 ```
 
+## Plot of model vs. calibrated temp
+```{r}
+start = 51
+end = 100
+maxy = 1.10*max(y2[(12001+start):(12000+end)],qf.y2.mle.ts[(12001+start):(12000+end)])
+miny = 0.90*min(y2[(12001+start):(12000+end)],qf.y2.mle.ts[(12001+start):(12000+end)])
+
+plot(start:end,y2[(12000+start):(12000+end)],col=1,type='b',pch=20,ylim=c(miny,maxy),
+     ylab = 'temp')
+lines(start:end,qf.y2.mle.ts[(12000+start):(12000+end)],col=2,type = 'b',pch=20)
+legend("bottomleft",c("Model",'calibrated'),
+       col=1:2,lwd=2,bty="n")
+```
