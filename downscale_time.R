@@ -38,12 +38,13 @@ x1 = c(x11,x10)
 X1 = cbind(x1,y0)
 head(X1)
 control <- list(iter = 300, batch.size = 100, lr = 0.001)
-fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
+fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                       n.hidden = c(30,20), activation = 'relu',n.knots = 15)
 plotGOF(fit.y1.mle.ts)
 cdf.y1.mle.ts = rep(NA,n)
 for(i in 1:n){
     cdf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1[i,], Y=y1[i], type = "CDF")    
+    if(i%%100==0)
     print(i)
 }
 
