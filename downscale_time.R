@@ -16,7 +16,7 @@ table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 loc = 21
-mnth = 1
+mnth = 9
 
 y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
 y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
