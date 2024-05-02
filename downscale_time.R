@@ -15,8 +15,8 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-loc = 21
-mnth = 9
+loc = 20
+mnth = 6
 
 y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
 y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
@@ -37,10 +37,11 @@ y1 = c(y11,y10)
 x1 = c(x11,x10)
 X1 = cbind(x1,y0)
 head(X1)
+par(mfrow=c(2,2))
 control <- list(iter = 300, batch.size = 100, lr = 0.001)
 fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                       n.hidden = c(30,20), activation = 'relu',n.knots = 15)
-plotGOF(fit.y1.mle.ts)
+# plotGOF(fit.y1.mle.ts)
 cdf.y1.mle.ts = rep(NA,n)
 for(i in 1:n){
     cdf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1[i,], Y=y1[i], type = "CDF")    
@@ -56,6 +57,7 @@ qf.y1.mle.ts = rep(NA,n)
 x_pred = c(X1[1,1],1)
 qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
 for(i in 2:n){
+    if(i%%100==0)
     print(i)
     if(i==n0+1)
         x_pred = c(X1[i,1],1)
@@ -107,10 +109,11 @@ control <- list(iter = 300, batch.size = 100, lr = 0.001)
 fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
                       n.hidden = c(30,20), activation = 'relu',n.knots = 20)
 
-plotGOF(fit.y2.mle.ts)
+# plotGOF(fit.y2.mle.ts)
 cdf.y2.mle.ts = rep(NA,n)
 for(i in 1:n){
-    cdf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2[i,], Y=y2[i], type = "CDF")    
+    cdf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2[i,], Y=y2[i], type = "CDF")   
+    if(i%%100==0)
     print(i)
 }
 
@@ -120,14 +123,15 @@ qout21[adjust] = 0.99999
 
 
 qf.y2.mle.ts = rep(NA,n)
-x_pred = c(X2[1,1],qf.y1.mle.ts[1],X2[1,3],1)
+x_pred = c(X2[1,1],1,qf.y1.mle.ts[1],X2[1,3])
 qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[1])    
 for(i in 2:n){
+    if(i%%100==0)
     print(i)
     if(i!=n0+1)
-        x_pred = c(qf.y2.mle.ts[i-1],qf.y1.mle.ts[i],qf.y1.mle.ts[i-1],1)
+        x_pred = c(qf.y2.mle.ts[i-1],1,qf.y1.mle.ts[i],qf.y1.mle.ts[i-1])
     if(i==n0+1)
-        x_pred = c(X2[i,1],qf.y1.mle.ts[i],X2[i,3],1)
+        x_pred = c(X2[i,1],1,qf.y1.mle.ts[i],X2[i,3])
     qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
 }
 plot(y2,qf.y2.mle.ts,col=y0+1, main = 'MLE-TS')
@@ -157,7 +161,7 @@ lines(d2,col=2,lty=2)
 legend("topright",c("Model","Observations",'MLE-TS'),
        col=1:6,lwd=2,bty="n",lty=c(1,1,2,3))
 
-plot(qf.y1.mle.ts,qf.y2.mle.ts,col = y0+1)
+# plot(qf.y1.mle.ts,qf.y2.mle.ts,col = y0+1)
 
 cor(y1[y0==1],y2[y0==1])
 cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1])
