@@ -33,7 +33,7 @@ plot(y1,y2,col=y0+1)
 
 y11 = y1[y0==1]
 x11 = y11[c(n1,1:(n1-1))]
-cor(cbind(y11,x11))
+cor(cbind(y11,x11))[1,2]
 y10 = y1[y0==0]
 x10 = y10[c(n0,1:(n0-1))]
 cor(cbind(y10,x10))
@@ -99,7 +99,7 @@ lines(d2,col=3,lty=2)
 ###################################
 y21 = y2[y0==1]
 x21 = y21[c(n1,1:(n1-1))]
-cor(cbind(y21,x21))
+cor(cbind(y21,x21))[1,2]
 y20 = y2[y0==0]
 x20 = y20[c(n0,1:(n0-1))]
 cor(cbind(y20,x20))
