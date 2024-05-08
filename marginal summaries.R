@@ -16,7 +16,7 @@ for(mnth in 1:12)
         y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
         y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
         y1y2.cors.1 = c(y1y2.cors.0,cor(y1[y0==1],y2[y0==1]))
-        y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
+        y1y2.cors.0 = c(y1y2.cors.1,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
         
         cal.array[,1,mnth,loc] = y1[y0==0][1:28]
         cal.array[,2,mnth,loc] = qf.y1.mle.ts[y0==0][1:28]
