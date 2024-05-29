@@ -58,8 +58,8 @@ for(mnth in 1:12)
         # pdf(file = pdfname,width = 6,height = 6)
         # par(mfrow=c(2,2))
         control <- list(iter = 300, batch.size = 100, lr = 0.001)
-        fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 15)
+        fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
+                              n.hidden = c(30,20), activation = 'relu',n.knots = 15,seed = loc*mnth)
         save.SPQR(fit.y1.mle.ts,name = modelname1)
         # plotGOF(fit.y1.mle.ts)
         cdf.y1.mle.ts = rep(NA,n)
@@ -96,12 +96,12 @@ for(mnth in 1:12)
                 X2 = cbind(X2,x.vec)
             }    
         }
-        
+        nx2 = ncol(X2)
         head(X2)
         head(y2)
         control <- list(iter = 300, batch.size = 100, lr = 0.001)
         fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 20)
+                              n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc*mnth)
         save.SPQR(fit.y2.mle.ts,name = modelname2)
         # plotGOF(fit.y2.mle.ts)
         cdf.y2.mle.ts = rep(NA,n)
@@ -120,38 +120,34 @@ for(mnth in 1:12)
         
         if(loc==1){
             qf.y1.mle.ts = rep(NA,n)
-            x_pred = c(1, X1[1,-1])
-            qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
-            for(i in 2:n){
+            for(i in 1:n){
                 if(i%%1000==0)
                     print(i)
-                if(i==n0+1)
+                if(i<=n0+1) #these are the ones which are already observed (+ the first gcm one)
                     x_pred = c(1,X1[i,-1])
-                if(i!=n0+1)
+                if(i>n0+1) #these are the GCM ones which therefore need the time lagged GCM predictions
                     x_pred = c(1,qf.y1.mle.ts[i-1])
                 qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
             }    
         }
         
         if(loc>1){
-            X1 = X1[,1:2]
+            X1_pred = X1[,1:2]
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
                 vecname = paste0('fits/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
-                X1 = cbind(X1,x.vec)
+                X1_pred = cbind(X1_pred,x.vec)
             }
             qf.y1.mle.ts = rep(NA,n)
-            x_pred = c(1,X1[1,2],X1[1,-c(1:2)])
-            qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
-            for(i in 2:n){
+            for(i in 1:n){
                 if(i%%1000==0)
                     print(i)
-                if(i==n0+1)
+                if(i<=n0+1)
                     x_pred = c(1,X1[i,2],X1[i,-c(1:2)])
-                if(i!=n0+1)
-                    x_pred = c(1,qf.y1.mle.ts[i-1],X1[i,-c(1:2)])
+                if(i>n0+1)
+                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred[i,-c(1:2)])
                 qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
             }   
         }
@@ -160,60 +156,44 @@ for(mnth in 1:12)
  ############### Predictions prcp        
         if(loc==1){
             qf.y2.mle.ts = rep(NA,n)
-            x_pred = c(1,X1[1,-1],qf.y1.mle.ts[1],X2[1,-c(1:nx1)])
-            qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[1])    
-            for(i in 2:n){
+            for(i in 1:n){
                 if(i%%1000==0)
                     print(i)
-                if(i!=n0+1)
+                if(i<=n0+1)
+                    x_pred = c(1,X1[i,-1],y1[i],X2[i,-c(1:nx1)])
+                if(i>n0+1)
                     x_pred = c(1,qf.y1.mle.ts[i-1],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1])
-                if(i==n0+1)
-                    x_pred = c(1,X1[i,-1],qf.y1.mle.ts[i],X2[i,-c(1:nx1)])
                 qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
             } 
         }
         
         if(loc>1){
-            X2 = cbind(X1,qf.y1.mle.ts,X2[,nx1+1])
+            X2_pred = cbind(X1_pred,qf.y1.mle.ts,X2[,nx1+1])
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
                 vecname = paste0('fits/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
-                X2 = cbind(X2,x.vec)
+                X2_pred = cbind(X2_pred,x.vec)
             }
             head(X2)
             head(X1)
             qf.y2.mle.ts = rep(NA,n)
-            x_pred = X2[1,]
-            qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[1])    
-            for(i in 2:n){
+      
+            for(i in 1:n){
                 if(i%%1000==0)
                     print(i)
-                x_pred = X2[i,]
-                x_pred[1] = 1
-                if(i!=n0+1)
-                    x_pred[nx1+1] = qf.y2.mle.ts[i-1]
+                if(i<=n0+1)
+                    x_pred = c(1,X1[i,-1],y1[i],X2[i,-c(1:nx1)])
+                if(i>n0+1)
+                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred[i,-c(1:2)],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1],X2_pred[i,(nx1+2):nx2])
                 qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
             }   
         }
         saveRDS(qf.y2.mle.ts,file = predname2)
         
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
-        
+        pdf(file = pdfname,width = 6,height = 6)
+        par(mfrow=c(2,2))
         
         plot(y1,qf.y1.mle.ts,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
         abline(0,1)
@@ -276,4 +256,5 @@ for(mnth in 1:12)
         cor(y1[y0==1],y2[y0==1])
         cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1])
         dev.off()
+        par(mfrow=c(1,1))
     }
