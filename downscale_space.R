@@ -16,8 +16,8 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-loc = 3
-mnth = 9
+loc = 1
+mnth = 2
 
 for(mnth in 1:12)
     for(loc in 1:25){
