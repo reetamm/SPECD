@@ -43,7 +43,7 @@ for(mnth in 1:12)
         cor(cbind(y10,x10))
         y1 = c(y11,y10)
         x1 = c(x11,x10)
-        X1 = cbind(x1,y0)
+        X1 = cbind(y0,x1)
         
         if(loc>1){
             k.end = loc-1
@@ -84,14 +84,15 @@ for(mnth in 1:12)
         cor(cbind(y20,x20))
         y2 = c(y21,y20)
         x2 = c(x21,x20)
-        X2 = cbind(x2,X1[,2],y1,X1[,-2])
-        colnames(X2)[1:4] = c('y2.lag','y0','y1','y1.lag')
-        
+        # X2 = cbind(x2,X1[,2],y1,X1[,-2])
+        X2 = cbind(X1,y1,x2)
+        nx1 = ncol(X1)+1
         if(loc>1){
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
                 x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth],gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth])
+                x.vec = log(1+x.vec)
                 X2 = cbind(X2,x.vec)
             }    
         }
@@ -119,15 +120,15 @@ for(mnth in 1:12)
         
         if(loc==1){
             qf.y1.mle.ts = rep(NA,n)
-            x_pred = c(X1[1,1],1,X1[1,-c(1:2)])
+            x_pred = c(1, X1[1,-1])
             qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
             for(i in 2:n){
                 if(i%%1000==0)
                     print(i)
                 if(i==n0+1)
-                    x_pred = c(X1[i,1],1,X1[i,-c(1:2)])
+                    x_pred = c(1,X1[i,-1])
                 if(i!=n0+1)
-                    x_pred = c(qf.y1.mle.ts[i-1],1,X1[i,-c(1:2)])
+                    x_pred = c(1,qf.y1.mle.ts[i-1])
                 qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
             }    
         }
@@ -142,15 +143,15 @@ for(mnth in 1:12)
                 X1 = cbind(X1,x.vec)
             }
             qf.y1.mle.ts = rep(NA,n)
-            x_pred = c(X1[1,1],1,X1[1,-c(1:2)])
+            x_pred = c(1,X1[1,2],X1[1,-c(1:2)])
             qf.y1.mle.ts[1] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[1])    
             for(i in 2:n){
                 if(i%%1000==0)
                     print(i)
                 if(i==n0+1)
-                    x_pred = c(X1[i,1],1,X1[i,-c(1:2)])
+                    x_pred = c(1,X1[i,2],X1[i,-c(1:2)])
                 if(i!=n0+1)
-                    x_pred = c(qf.y1.mle.ts[i-1],1,X1[i,-c(1:2)])
+                    x_pred = c(1,qf.y1.mle.ts[i-1],X1[i,-c(1:2)])
                 qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
             }   
         }
@@ -159,24 +160,21 @@ for(mnth in 1:12)
  ############### Predictions prcp        
         if(loc==1){
             qf.y2.mle.ts = rep(NA,n)
-            x_pred = c(X2[1,1],1,qf.y1.mle.ts[1],X2[1,4])
+            x_pred = c(1,X1[1,-1],qf.y1.mle.ts[1],X2[1,-c(1:nx1)])
             qf.y2.mle.ts[1] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[1])    
             for(i in 2:n){
                 if(i%%1000==0)
                     print(i)
                 if(i!=n0+1)
-                    x_pred = c(qf.y2.mle.ts[i-1],1,qf.y1.mle.ts[i],qf.y1.mle.ts[i-1])
+                    x_pred = c(1,qf.y1.mle.ts[i-1],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1])
                 if(i==n0+1)
-                    x_pred = c(X2[i,1],1,qf.y1.mle.ts[i],X2[i,4])
+                    x_pred = c(1,X1[i,-1],qf.y1.mle.ts[i],X2[i,-c(1:nx1)])
                 qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
             } 
         }
         
         if(loc>1){
-            X2 = X2[,1:4]
-            X2[,2] = 1
-            X2[,3] = qf.y1.mle.ts
-            X2 = cbind(X2,X1[,-c(1:2)])
+            X2 = cbind(X1,qf.y1.mle.ts,X2[,nx1+1])
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
@@ -192,10 +190,10 @@ for(mnth in 1:12)
             for(i in 2:n){
                 if(i%%1000==0)
                     print(i)
-                if(i==n0+1)
-                    x_pred = X2[i,]
+                x_pred = X2[i,]
+                x_pred[1] = 1
                 if(i!=n0+1)
-                    x_pred = c(qf.y2.mle.ts[i-1],X2[i,2:3],qf.y1.mle.ts[i-1],X2[i,-c(1:4)])
+                    x_pred[nx1+1] = qf.y2.mle.ts[i-1]
                 qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
             }   
         }
