@@ -48,7 +48,7 @@ pdf(file = pdfname,width = 6,height = 6)
 par(mfrow=c(2,2))
 control <- list(iter = 300, batch.size = 100, lr = 0.001)
 fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
-                      n.hidden = c(30,20), activation = 'relu',n.knots = 15)
+                      n.hidden = c(30,20), activation = 'relu',n.knots = 15,seed = mnth*loc)
 save.SPQR(fit.y1.mle.ts,name = modelname1)
 # plotGOF(fit.y1.mle.ts)
 cdf.y1.mle.ts = rep(NA,n)
@@ -117,7 +117,7 @@ head(X2)
 head(y2)
 control <- list(iter = 300, batch.size = 100, lr = 0.001)
 fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
-                      n.hidden = c(30,20), activation = 'relu',n.knots = 20)
+                      n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = mnth*loc)
 save.SPQR(fit.y2.mle.ts,name = modelname2)
 # plotGOF(fit.y2.mle.ts)
 cdf.y2.mle.ts = rep(NA,n)
@@ -144,7 +144,7 @@ for(i in 2:n){
         x_pred = c(X2[i,1],1,qf.y1.mle.ts[i],X2[i,3])
     qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
 }
-saveRDS(qf.y2.mle.ts,file = predname1)
+saveRDS(qf.y2.mle.ts,file = predname2)
 plot(y2,qf.y2.mle.ts,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
 abline(0,1)
 
