@@ -3,8 +3,9 @@ library(ggplot2)
 library(scales)
 library(lubridate)
 library(GpGp)
-gcm.long = read.csv('selectedgcmdata.csv')
-obs.long = read.csv('selectedobsdata.csv')
+state = 'TN'
+gcm.long = read.csv(paste0('data/',state,'_gcm_data.csv'))
+obs.long = read.csv(paste0('data/',state,'_obs_data.csv'))
 
 gcm.months = month(gcm.long[,1])
 
