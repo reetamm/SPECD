@@ -137,7 +137,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -173,7 +173,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }
