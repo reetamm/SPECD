@@ -17,22 +17,30 @@ table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 loc = 1
-mnth = 2
+mnth = 1
 
-for(mnth in 1:12)
-    for(loc in 1:25){
-        pdfname = paste0('plots/',state,'/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+for(mnth in 1:1)
+    for(loc in 2:2){
+        pdfname = paste0('plots/',state,'/space/fits_temp_m',mnth,'_l',loc,'.pdf')
+        modelname1 = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname2 = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
-        y2 <- log(1+y2)
+        # y2 <- log(1+y2)
+       
         n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth]); n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
+        
+        r0 <- MASS::fitdistr(y2[y2>0 & y0==0],'exponential')$estimate
+        r1 <- MASS::fitdistr(y2[y2>0 & y0==1],'exponential')$estimate
+        n00 <- which(y2==0 & y0==0)
+        n01 <- which(y2==0 & y0==1)
+        y2[n00] = -rexp(length(n00),r0)
+        y2[n01] = -rexp(length(n01),r1)
         
         plot(y1,y2,col=y0+1)
         
@@ -83,7 +91,14 @@ for(mnth in 1:12)
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
                 x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth],gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth])
-                x.vec = log(1+x.vec)
+                # x.vec = log(1+x.vec)
+                r0 <- MASS::fitdistr(x.vec[x.vec>0 & y0==0],'exponential')$estimate
+                r1 <- MASS::fitdistr(x.vec[x.vec>0 & y0==1],'exponential')$estimate
+                n00 <- which(x.vec==0 & y0==0)
+                n01 <- which(x.vec==0 & y0==1)
+                x.vec[n00] = -rexp(length(n00),r0)
+                x.vec[n01] = -rexp(length(n01),r1)
+                
                 X2 = cbind(X2,x.vec)
             }    
         }
@@ -117,7 +132,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -152,7 +167,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }
@@ -209,7 +224,8 @@ for(mnth in 1:12)
         
         summary(y2[y0==1])
         summary(y2[y0==0])
-        
+        y2[y2<=0]=0
+        qf.y2.mle.ts[qf.y2.mle.ts<=0]=0
         d0 <-density(y2[y0==0]) 
         d1 <-density(y2[y0==1]) 
         d2 <- density(qf.y2.mle.ts[y0==0])
