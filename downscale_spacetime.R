@@ -2,8 +2,9 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-gcm.long = read.csv('selectedgcmdata.csv')
-obs.long = read.csv('selectedobsdata.csv')
+state = 'TN'
+gcm.long = read.csv(paste0('data/',state,'_gcm_data.csv'))
+obs.long = read.csv(paste0('data/',state,'_obs_data.csv'))
 
 gcm.months = month(gcm.long[,1])
 
@@ -15,16 +16,16 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-loc = 2
-mnth = 9
+loc = 1
+mnth = 1
 
 for(mnth in 1:12)
     for(loc in 1:25){
-        pdfname = paste0('plots/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname = paste0('plots/',state,'/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
+        modelname1 = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',state,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname2 = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',state,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
