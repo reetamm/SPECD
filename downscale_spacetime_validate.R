@@ -24,13 +24,13 @@ mnth = 1
 # Y.range <- range(Y)
 # .Y <- (Y - Y.range[1])/diff(Y.range)
 
-for(mnth in 1:12)
-    for(loc in 1:25){
-        pdfname = paste0('plots/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+for(mnth in 1:2)
+    for(loc in 1:3){
+        pdfname = paste0('plots/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
+        modelname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname2 = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1_train <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
                       gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
@@ -167,8 +167,8 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
                 x.vec = log(0.0001+x.vec)
                 X2_test = cbind(X2_test,x.vec)
             }    
@@ -225,7 +225,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -242,7 +242,7 @@ for(mnth in 1:12)
                 if(i%%100==0)
                     print(i)
                 if(i<=n0_test+1)
-                    x_pred = c(1,X1_test_scaled[i,2],X1_test[i,-c(1:2)])
+                    x_pred = c(1,X1_test_scaled[i,2],X1_test_scaled[i,-c(1:2)])
                 if(i>n0_test+1)
                     x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred_scaled[i,-c(1:2)])
                 qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
@@ -250,7 +250,7 @@ for(mnth in 1:12)
         }
         
         y1_pred <- qf.y1.mle.ts*diff(y1_range) + y1_range[1]
-        saveRDS(qf.y1.mle.ts,file = predname1)
+        saveRDS(y1_pred,file = predname1)
  ############### Predictions prcp        
         if(loc==1){
             qf.y2.mle.ts = rep(NA,n_test)
@@ -266,13 +266,20 @@ for(mnth in 1:12)
         }
         
         if(loc>1){
-            X2_pred = cbind(X1_pred,qf.y1.mle.ts,X2_test[,nx1+1])
+            X2_pred = cbind(X1_pred_scaled,qf.y1.mle.ts,X2_test_scaled[,nx1+1])
+            nx3 <- ncol(X2_pred)+1
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
+            }
+            
+            # need to scale the x.vec
+            X2_pred_scaled <- X2_pred
+            for(i in nx3:ncol(X2_train)){
+                X2_pred_scaled[,i] <- (X2_pred[,i] - x2_range[1,i])/diff(x2_range[,i])
             }
             
             qf.y2.mle.ts = rep(NA,n_test)
@@ -281,14 +288,14 @@ for(mnth in 1:12)
                 if(i%%100==0)
                     print(i)
                 if(i<=n0_test+1)
-                    x_pred = c(1,X1_test[i,-1],y1_test[i],X2_test[i,-c(1:nx1)])
+                    x_pred = c(1,X1_test_scaled[i,-1],y1_test_scaled[i],X2_test_scaled[i,-c(1:nx1)])
                 if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred[i,-c(1:2)],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1],X2_pred[i,(nx1+2):nx2])
+                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred_scaled[i,-c(1:2)],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1],X2_pred_scaled[i,(nx1+2):nx2])
                 qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
             }   
         }
         y2_pred <- qf.y2.mle.ts*diff(y2_range) + y2_range[1]
-        saveRDS(qf.y2.mle.ts,file = predname2)
+        saveRDS(y2_pred,file = predname2)
         
         pdf(file = pdfname,width = 6,height = 6)
         par(mfrow=c(2,2))
@@ -296,10 +303,10 @@ for(mnth in 1:12)
         plot(y1_test,y1_pred,col=y0_test+1, main = 'MLE-TS',pch=20,cex=0.2)
         abline(0,1)
         
-        summary(qf.y1.mle.ts[y0_test==0])
-        summary(qf.y1.mle.ts[y0_test==1])
-        cor(qf.y1.mle.ts[y0_test==0][-1],qf.y1.mle.ts[y0_test==0][-n0_test])
-        cor(qf.y1.mle.ts[y0_test==1][-1],qf.y1.mle.ts[y0_test==1][-n0_test])
+        summary(y1_pred[y0_test==0])
+        summary(y1_pred[y0_test==1])
+        cor(y1_pred[y0_test==0][-1],y1_pred[y0_test==0][-n0_test])
+        cor(y1_pred[y0_test==1][-1],y1_pred[y0_test==1][-n0_test])
         
         summary(y1_test[y0_test==1])
         summary(y1_test[y0_test==0])
@@ -321,22 +328,23 @@ for(mnth in 1:12)
         
         
         
-        
-        plot(y2_test,qf.y2.mle.ts,col=y0_test+1, main = 'MLE-TS',pch=20,cex=0.2)
+        # y2_pred <- exp(y2_pred) - 0.0001
+        # y2_test <- exp(y2_test) - 0.0001
+        plot(y2_test,y2_pred,col=y0_test+1, main = 'MLE-TS',pch=20,cex=0.2)
         abline(0,1)
         
         
-        summary(qf.y2.mle.ts[y0_test==0])
-        summary(qf.y2.mle.ts[y0_test==1])
-        cor(qf.y2.mle.ts[y0_test==0][-1],qf.y2.mle.ts[y0_test==0][-n0_test])
-        cor(qf.y2.mle.ts[y0_test==1][-1],qf.y2.mle.ts[y0_test==1][-n0_test])
+        summary(y2_pred[y0_test==0])
+        summary(y2_pred[y0_test==1])
+        cor(y2_pred[y0_test==0][-1],y2_pred[y0_test==0][-n0_test])
+        cor(y2_pred[y0_test==1][-1],y2_pred[y0_test==1][-n0_test])
         
         summary(y2_test[y0_test==1])
         summary(y2_test[y0_test==0])
         
-        d0 <-density(exp(y2_test[y0_test==0]) + 0.0001)
-        d1 <-density(exp(y2_test[y0_test==1]) + 0.0001)
-        d2 <- density(exp(y2_pred[y0_test==0]) + 0.0001)
+        d0 <-density(y2_test[y0_test==0])
+        d1 <-density(y2_test[y0_test==1])
+        d2 <- density(y2_pred[y0_test==0])
         plotmax.y = max(d0$y,d1$y,d2$y)
         plotmin.y = min(d0$y,d1$y,d2$y)
         plotmax.x = max(d0$x,d1$x,d2$x)
