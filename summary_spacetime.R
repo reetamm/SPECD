@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-state = 'SE'
+state = 'SW'
 
 gcm.long = read.csv(paste0('data/',state,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',state,'_obs_data.csv'))
@@ -95,6 +95,37 @@ wasdist = array(dim = c(25,2))
 # }
 
 cal.array = do.call(abind::abind,c(cal.data,along=1))
+cal.array2 = apply(cal.array, 2, c)
+
+png(paste0(state,'_density.png'),width = 800, height = 400)
+par(mfrow=c(1,2))
+d0 <-density(cal.array2[,1]) # gcm
+d1 <-density(cal.array2[,3]) # obs 
+d2 <- density(cal.array2[,2]) # pred
+plotmax.y = max(d0$y,d1$y,d2$y)
+plotmin.y = min(d0$y,d1$y,d2$y)
+plotmax.x = max(d0$x,d1$x,d2$x)
+plotmin.x = min(d0$x,d1$x,d2$x)
+plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
+     xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",main="Temp")
+lines(d1,col=2)
+lines(d2,col=2,lty=2)
+legend('topleft',c('GCM','Obs','Cal'),col=c(1,2,2),lty = c(1,1,2),lwd=2)
+d0 <-density(cal.array2[,4]) # gcm
+d1 <-density(cal.array2[,6]) # obs 
+d2 <- density(cal.array2[,5]) # pred
+plotmax.y = max(d0$y,d1$y,d2$y)
+plotmin.y = min(d0$y,d1$y,d2$y)
+plotmax.x = max(d0$x,d1$x,d2$x)
+plotmin.x = min(d0$x,d1$x,d2$x)
+plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
+     xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",main="Prcp")
+lines(d1,col=2)
+lines(d2,col=2,lty=2)
+legend('topright',c('GCM','Obs','Cal'),col=c(1,2,2),lty = c(1,1,2),lwd=2)
+par(mfrow=c(1,1))
+dev.off()
+
 for(loc in 1:25){
     wasdist[loc,1] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
     wasdist[loc,2] <- wasserstein1d(cal.array[,5,loc],cal.array[,6,loc])
@@ -155,6 +186,47 @@ for(mnth in 1:12)
         
         
     }
+
+# compare means and upper quantiles
+# 1 = obs 2 = pred 
+pred_summaries = matrix(NA,300,9)
+count = 0
+for(mnth in 1:12)
+    for(loc in 1:25){
+        count = count+1
+        cal.array = cal.data[[mnth]] 
+        # obs summary
+        pred_summaries[count,1] = mean(cal.array[,6,loc])
+        pred_summaries[count,4] = quantile(cal.array[,6,loc],q2)
+        pred_summaries[count,7] = quantile(cal.array[,3,loc],q1)
+        # pred summary
+        pred_summaries[count,2] = mean(cal.array[,5,loc])
+        pred_summaries[count,5] = quantile(cal.array[,5,loc],q2)
+        pred_summaries[count,8] = quantile(cal.array[,2,loc],q1)
+        # gcm summary
+        pred_summaries[count,3] = mean(cal.array[,4,loc])
+        pred_summaries[count,6] = quantile(cal.array[,4,loc],q2)
+        pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
+    }
+png(paste0('summaries_',state,'.png'),width = 1200,height = 400)
+par(mfrow=c(1,3))
+plot(pred_summaries[,1:2],col=season,xlab='Observed',ylab = 'Calibrated',pch=20,main = 'Prcp mean')
+abline(0,1)
+points(pred_summaries[,c(1,3)],pch=3,col=alpha(1,0.4))
+legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,20))
+
+plot(pred_summaries[,4:5],col=season,xlab='Observed',ylab = 'Calibrated',pch=20,main = 'Prcp 0.90 quantile')
+abline(0,1)
+points(pred_summaries[,c(4,6)],pch=3,col=alpha(1,0.4))
+legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,20))
+
+plot(pred_summaries[,7:8],col=season,xlab='Observed',ylab = 'Calibrated',pch=20,main = 'Temp 0.90 quantile')
+abline(0,1)
+points(pred_summaries[,c(7,9)],pch=3,col=alpha(1,0.4))
+legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,20))
+par(mfrow=c(1,1))
+dev.off()
+
 # png('tailprob_space.png',width = 1200,height = 400)
 # par(mfrow=c(1,3))
 # tmp = apply(prcp.tail,3,c)

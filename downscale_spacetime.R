@@ -2,11 +2,12 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-state = 'TN'
+state = 'SW'
 gcm.long = read.csv(paste0('data/',state,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',state,'_obs_data.csv'))
 
 gcm.months = month(gcm.long[,1])
+numdays = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 grid.no = as.factor(gcm.long$lat*gcm.long$lon)
 str(grid.no)
@@ -18,6 +19,9 @@ set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 loc = 1
 mnth = 1
+
+# Y.range <- range(Y)
+# .Y <- (Y - Y.range[1])/diff(Y.range)
 
 for(mnth in 1:12)
     for(loc in 1:25){
