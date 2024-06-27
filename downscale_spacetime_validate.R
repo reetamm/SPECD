@@ -3,6 +3,10 @@ library(GpGp)
 library(SPQR)
 library(lubridate)
 region = 'SE'
+<<<<<<< Updated upstream
+=======
+for(region in c('SE','SW')){
+>>>>>>> Stashed changes
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -40,8 +44,8 @@ for(mnth in 1:12)
                       gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
         y2_test  <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
                         gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2_train <- log(0.0001+y2_train)
-        y2_test <- log(0.0001+y2_test)
+        y2_train <- log(1+y2_train)
+        y2_test <- log(1+y2_test)
         
         n0_train <- n1_train <- length(y1_train)/2
         n0_test  <- n1_test  <- length(y1_test)/2
@@ -121,8 +125,8 @@ for(mnth in 1:12)
         }
         
         qout11 <- cdf.y1.mle.ts
-        # adjust = which(qout11>0.99999)
-        # qout11[adjust] = 0.99999
+        adjust = which(qout11>0.99999)
+        qout11[adjust] = 0.99999
         
         
         ###################################
@@ -145,7 +149,7 @@ for(mnth in 1:12)
             for(k in k.start:k.end){
                 x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
                           gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
-                x.vec = log(0.0001+x.vec)
+                x.vec = log(1+x.vec)
                 X2_train = cbind(X2_train,x.vec)
             }    
         }
@@ -169,7 +173,7 @@ for(mnth in 1:12)
             for(k in k.start:k.end){
                 x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
                           gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
-                x.vec = log(0.0001+x.vec)
+                x.vec = log(1+x.vec)
                 X2_test = cbind(X2_test,x.vec)
             }    
         }
@@ -201,8 +205,10 @@ for(mnth in 1:12)
         }
         
         qout21 <- cdf.y2.mle.ts
-        # adjust = which(qout21>0.99999)
-        # qout21[adjust] = 0.99999
+        adjust = which(qout21>0.99999)
+        qout21[adjust] = 0.99999
+        # adjust = which(qout21<0.00001)
+        # qout21[adjust] = 0.00001
         
         
  ############### Predictions temp     
@@ -328,8 +334,8 @@ for(mnth in 1:12)
         
         
         
-        # y2_pred <- exp(y2_pred) - 0.0001
-        # y2_test <- exp(y2_test) - 0.0001
+        # y2_pred <- exp(y2_pred) - 1
+        # y2_test <- exp(y2_test) - 1
         plot(y2_test,y2_pred,col=y0_test+1, main = 'MLE-TS',pch=20,cex=0.2)
         abline(0,1)
         
@@ -364,3 +370,5 @@ for(mnth in 1:12)
         dev.off()
         par(mfrow=c(1,1))
     }
+}
+
