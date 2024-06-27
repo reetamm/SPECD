@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
+region = 'SE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -24,8 +24,8 @@ mnth = 1
 # Y.range <- range(Y)
 # .Y <- (Y - Y.range[1])/diff(Y.range)
 
-for(mnth in 1:2)
-    for(loc in 1:3){
+for(mnth in 1:12)
+    for(loc in 1:25){
         pdfname = paste0('plots/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
         modelname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc)
         predname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
