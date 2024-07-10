@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SE'
+region = 'SW'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -24,7 +24,7 @@ mnth = 1
 # Y.range <- range(Y)
 # .Y <- (Y - Y.range[1])/diff(Y.range)
 
-for(mnth in 11:12)
+for(mnth in 1:12)
     for(loc in 1:25){
         pdfname = paste0('plots/',region,'_validation/space/fits_temp_m',mnth,'_l',loc,'.pdf')
         predname1 = paste0('fits/',region,'_validation/space/fits_temp_m',mnth,'_l',loc,'.RDS')
@@ -109,8 +109,8 @@ for(mnth in 11:12)
         }
         
         qout11 <- cdf.y1.mle.ts
-        # adjust = which(qout11>0.99999)
-        # qout11[adjust] = 0.99999
+        adjust = which(qout11>0.99999)
+        qout11[adjust] = 0.99999
         
         
         ###################################
