@@ -3,9 +3,9 @@ library(GpGp)
 library(SPQR)
 library(lubridate)
 use.gpu = torch::cuda_is_available()
-state = 'TN'
-gcm.long = read.csv(paste0('data/',state,'_gcm_data.csv'))
-obs.long = read.csv(paste0('data/',state,'_obs_data.csv'))
+region = 'SW'
+gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
+obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 gcm.months = month(gcm.long[,1])
 
 grid.no = as.factor(gcm.long$lat*gcm.long$lon)
@@ -21,15 +21,15 @@ mnth = 2
 
 for(mnth in 1:12)
     for(loc in 1:25){
-        pdfname = paste0('plots/',state,'/space/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname = paste0('plots/',region,'/space/fits_temp_m',mnth,'_l',loc,'.pdf')
+        modelname1 = paste0('fits/',region,'/space/fits_temp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',region,'/space/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname2 = paste0('fits/',region,'/space/fits_prcp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',region,'/space/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
-        y2 <- log(1+y2)
+        y2 <- log(0.0001+y2)
         n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth]); n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
@@ -56,8 +56,8 @@ for(mnth in 1:12)
         # par(mfrow=c(2,2))
         control <- list(iter = 300, batch.size = 100, lr = 0.001)
         fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=use.gpu,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 15,seed = mnth*loc)
-        save.SPQR(fit.y1.mle.ts,name = modelname1)
+                              n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = mnth*loc)
+        # save.SPQR(fit.y1.mle.ts,name = modelname1)
         # plotGOF(fit.y1.mle.ts)
         cdf.y1.mle.ts = rep(NA,n)
         for(i in 1:n){
@@ -83,7 +83,7 @@ for(mnth in 1:12)
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
                 x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth],gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth])
-                x.vec = log(1+x.vec)
+                x.vec = log(0.0001+x.vec)
                 X2 = cbind(X2,x.vec)
             }    
         }
@@ -93,7 +93,7 @@ for(mnth in 1:12)
         control <- list(iter = 300, batch.size = 100, lr = 0.001)
         fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=use.gpu,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = mnth*loc)
-        save.SPQR(fit.y2.mle.ts,name = modelname2)
+        # save.SPQR(fit.y2.mle.ts,name = modelname2)
         # plotGOF(fit.y2.mle.ts)
         cdf.y2.mle.ts = rep(NA,n)
         for(i in 1:n){
@@ -117,7 +117,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',state,'/space/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'/space/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -152,7 +152,7 @@ for(mnth in 1:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',state,'/space/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'/space/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }

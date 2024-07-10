@@ -6,13 +6,13 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
 gcm.months = month(gcm.long[,1])
-gcm.years = year(gcm.long[,1])
+
 grid.no = as.factor(gcm.long$lat*gcm.long$lon)
 str(grid.no)
 coords = aggregate(gcm.long[,2:3],by = list(grid.no), FUN = mean)
@@ -40,16 +40,13 @@ daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
 cal.data = vector('list',12)
 for(mnth in 1:12){
-    cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
+    cal.array = array(dim = c(daysinmonth[mnth]*64,6,25))
     for(loc in 1:25){
         print(paste(mnth,loc))
-        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
+        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
         y2 <- log(0.0001+y2)
-        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth]); n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
@@ -58,9 +55,9 @@ for(mnth in 1:12){
         y21 = y2[y0==1]
         x21 = y21[c(n1,1:(n1-1))]
 
-        envname = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
         y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
@@ -80,8 +77,8 @@ for(mnth in 1:12){
 }
 
 save(y1.cors.0,y1.cors.1,y2.cors.0,y2.cors.1,y1y2.cors.0,y1y2.cors.1,cal.data,
-           file = paste0('summary_spacetime_',region,'_validation.RData'))
-load(paste0('summary_spacetime_',region,'_validation.RData'))
+           file = paste0('summary_spacetime_',region,'.RData'))
+load(paste0('summary_spacetime_',region,'.RData'))
 eachmonth = rep(NA,12)
 # for(i in 1:12){
 #     eachmonth[i] = dim(cal.data[[i]])[1]
@@ -100,7 +97,7 @@ wasdist = array(dim = c(25,2))
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 
-# png(paste0(region,'_density.png'),width = 800, height = 400)
+png(paste0('plots/',region,'_density.png'),width = 800, height = 400)
 par(mfrow=c(1,2))
 d0 <-density(cal.array2[,1]) # gcm
 d1 <-density(cal.array2[,3]) # obs 
@@ -127,7 +124,7 @@ lines(d1,col=2)
 lines(d2,col=2,lty=2)
 legend('topright',c('GCM','Obs','Cal'),col=c(1,2,2),lty = c(1,1,2),lwd=2)
 par(mfrow=c(1,1))
-# dev.off()
+dev.off()
 
 for(loc in 1:25){
     wasdist[loc,1] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
@@ -139,9 +136,11 @@ metrics = data.frame(coords,wasdist,vecchia.order)
 ggplot(metrics,aes(x=lon,y=lat,fill=X1)) + geom_raster() + coord_equal() +
     geom_text(aes(label=round(X1,2)),col='white') + ggtitle(paste(region,'temp')) +
     theme(legend.position = 'none')
+ggsave(filename = paste0('plots/',region,'_wassdist_temp.png'))
 ggplot(metrics,aes(x=lon,y=lat,fill=X2)) + geom_raster() + coord_equal() +
     geom_text(aes(label=round(X2,2)),col='white') + ggtitle(paste(region,'prcp')) +
     theme(legend.position = 'none')
+ggsave(filename = paste0('plots/',region,'_wassdist_prcp.png'))
 
 mnth=12
 loc=1
@@ -152,21 +151,25 @@ lines(1:31,cal.array[1:31,5,loc],type = 'b',col=2,pch=20)
 lines(1:31,cal.array[1:31,6,loc],type = 'b',col=3,pch=20)
 
 season = rep(1:4,each=75)
-# png(paste0('autocorr_spacetime_',region,'.png'),width = 800,height = 400)
+png(paste0('plots/autocorr_spacetime_',region,'.png'),width = 800,height = 400)
 par(mfrow=c(1,2))
 plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'calibrated',ylab = 'observed',
-     col=season,main = 'temp autocorrelations')
+     col=season,main = 'temp autocorrelations',xlim = c(0.5,1),ylim = c(0.5,1))
 legend('topleft',c('JFM','AMJ','JAS','OND'),col=1:4,pch=20,pt.cex = 2)
 abline(0,1)
 plot(y2.cors.0[-1],y2.cors.1[-1],pch=20,xlab = 'calibrated',ylab = 'observed',
-     col = season, main = 'prcp autocorrelations')
+     col = season, main = 'prcp autocorrelations',xlim = c(0.1,0.7),ylim = c(0.1,0.7))
 legend('topleft',c('JFM','AMJ','JAS','OND'),col=1:4,pch=20,pt.cex = 2)
 abline(0,1)
 # plot(y1y2.cors.0,y1y2.cors.1,pch=20,xlab = 'calibrated',ylab = 'observed',main = 'cross correlations')
 # abline(0,1)
 par(mfrow=c(1,1))
-# dev.off()
-
+dev.off()
+png(paste0('plots/crosscorr_spacetime_',region,'.png'),width = 400,height = 400)
+plot(y1y2.cors.0,y1y2.cors.1,pch=20,xlab = 'calibrated',ylab = 'observed',
+     col=season,main = 'cross correlations')
+abline(0,1)
+dev.off()
 ### rmse of cross correlations
 sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
 
@@ -211,7 +214,7 @@ for(mnth in 1:12)
         pred_summaries[count,6] = quantile(cal.array[,4,loc],q2)
         pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
     }
-# png(paste0('summaries_',region,'.png'),width = 1200,height = 400)
+png(paste0('plots/summaries_',region,'.png'),width = 1200,height = 400)
 par(mfrow=c(1,3))
 plot(pred_summaries[,1:2],col=season,xlab='Observed',ylab = 'Calibrated',pch=20,main = 'Prcp mean')
 abline(0,1)
@@ -228,7 +231,7 @@ abline(0,1)
 points(pred_summaries[,c(7,9)],pch=3,col=alpha(1,0.4))
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,20))
 par(mfrow=c(1,1))
-# dev.off()
+dev.off()
 
 # png('tailprob_space.png',width = 1200,height = 400)
 # par(mfrow=c(1,3))
@@ -262,7 +265,7 @@ par(mfrow=c(1,1))
 # legend('topright',c('Calibrated','GCM'),col=1:2,lwd=2,bty="n")
 # par(mfrow=c(1,1))
 # dev.off()
-# png(paste0('tailprob_spacetime_',region,'.png'),width = 800,height = 400)
+png(paste0('plots/tailprob_spacetime_',region,'.png'),width = 800,height = 400)
 par(mfrow=c(1,2))
 tmp = apply(temp.tail,3,c)
 plot(tmp[,1],tmp[,2],xlab = 'uncalibrated',ylab = 'calibrated',pch=20,
@@ -275,7 +278,7 @@ plot(tmp[,1],tmp[,2],xlab = 'uncalibrated',ylab = 'calibrated',pch=20,
      main = 'Prcp exceedance probability above 0.90 quantile',col=season)
 legend('topleft',c('JFM','AMJ','JAS','OND'),col=1:4,pch=20,pt.cex = 2)
 abline(h=0.1)
-# dev.off()
+dev.off()
 # abline(0,1)
 # 
 # coords = cbind(coords,vecchia.order)
@@ -300,7 +303,7 @@ for(i in 1:24)
 }
 season = rep(1:4,each=900)
 
-# png(paste0('spatcorr_spacetime_',region,'.png'),width = 800,height = 400)
+png(paste0('plots/spatcorr_spacetime_',region,'.png'),width = 800,height = 400)
 par(mfrow=c(1,2))
 plot(correls[,2],correls[,1],col=alpha(1,0.4),pch=3,
      xlab = 'Calibrated',ylab = 'Observed',main = 'Temp spatial correlations')
@@ -313,4 +316,4 @@ plot(correls[,5],correls[,4],col=alpha(1,0.4),pch=3,
 points(correls[,5],correls[,6],col=alpha(season,0.2),pch=20)
 abline(0,1)
 legend('topleft',c('GCM','Obs'),pch = c(3,20))
-# dev.off()
+dev.off()
