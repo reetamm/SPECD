@@ -26,22 +26,22 @@ mnth = 1
 
 for(mnth in 11:12)
     for(loc in 1:25){
-        pdfname = paste0('plots/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname = paste0('plots/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.pdf')
+        modelname2 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname1 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
-        y1_train <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
+        y2_train <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
                       gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
-        y2_train <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
+        y1_train <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
                         gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
-        y1_test  <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+        y2_test  <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
                       gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2_test  <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+        y1_test  <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
                         gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2_train <- log(0.0001+y2_train)
-        y2_test <- log(0.0001+y2_test)
+        y1_train <- log(0.0001+y1_train)
+        y1_test <- log(0.0001+y1_test)
         
         n0_train <- n1_train <- length(y1_train)/2
         n0_test  <- n1_test  <- length(y1_test)/2
@@ -64,8 +64,9 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+                x.vec = log(0.0001+x.vec)
                 X1_train = cbind(X1_train,x.vec)
             }    
         }
@@ -87,8 +88,9 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
+                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
+                x.vec = log(0.0001+x.vec)
                 X1_test = cbind(X1_test,x.vec)
             }    
         }
@@ -108,9 +110,9 @@ for(mnth in 11:12)
         
         # pdf(file = pdfname,width = 6,height = 6)
         # par(mfrow=c(2,2))
-        control <- list(iter = 300, batch.size = 100, lr = 0.001)
-        fit.y1.mle.ts <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=T,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 15, seed = mnth*loc)
+        control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'pt',sep='.'))
+        fit.y1.mle.ts <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
+                              n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
         # save.SPQR(fit.y1.mle.ts,name = modelname1)
         # plotGOF(fit.y1.mle.ts)
         cdf.y1.mle.ts = rep(NA,n_test)
@@ -143,9 +145,9 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
-                x.vec = log(0.0001+x.vec)
+                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+                # x.vec = log(0.0001+x.vec)
                 X2_train = cbind(X2_train,x.vec)
             }    
         }
@@ -167,9 +169,9 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
-                x.vec = log(0.0001+x.vec)
+                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
+                # x.vec = log(0.0001+x.vec)
                 X2_test = cbind(X2_test,x.vec)
             }    
         }
@@ -188,8 +190,8 @@ for(mnth in 11:12)
             X2_test_scaled[,i] <- (X2_test[,i] - x2_range[1,i])/diff(x2_range[,i])
         }
       
-        control <- list(iter = 300, batch.size = 100, lr = 0.001)
-        fit.y2.mle.ts <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=T,
+        control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'pt',sep='.'))
+        fit.y2.mle.ts <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
         # save.SPQR(fit.y2.mle.ts,name = modelname2)
         # plotGOF(fit.y2.mle.ts)
@@ -225,7 +227,7 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'_validation/spacetime/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -271,7 +273,7 @@ for(mnth in 11:12)
             k.end = loc-1
             k.start = max(1,loc-5)
             for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'_validation/spacetime/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc-k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }
@@ -361,6 +363,6 @@ for(mnth in 11:12)
         
         cor(y1_test[y0_test==1],y2_test[y0_test==1])
         cor(y1_pred[y0_test==1],y2_pred[y0_test==1])
-        dev.off()
         par(mfrow=c(1,1))
+        dev.off()
     }
