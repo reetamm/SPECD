@@ -24,13 +24,13 @@ mnth = 1
 # Y.range <- range(Y)
 # .Y <- (Y - Y.range[1])/diff(Y.range)
 
-for(mnth in 11:12)
+for(mnth in 1:12)
     for(loc in 1:25){
         pdfname = paste0('plots/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname2 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname1 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        modelname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc)
+        predname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
+        modelname2 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc)
+        predname2 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y2_train <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
                       gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
