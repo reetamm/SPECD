@@ -23,13 +23,11 @@ mnth = 1
 # Y.range <- range(Y)
 # .Y <- (Y - Y.range[1])/diff(Y.range)
 
-for(mnth in 7:12)
+for(mnth in 1:12)
     for(loc in 1:25){
-        pdfname = paste0('plots/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.pdf')
-        modelname1 = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc)
-        predname1 = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
-        modelname2 = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc)
-        predname2 = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname     <- paste0('plots/',region,'/fits_temp_m',mnth,'_l',loc,'.pdf')
+        predname1   <- paste0( 'fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
+        predname2   <- paste0( 'fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
@@ -62,8 +60,8 @@ for(mnth in 7:12)
         head(X1)
         # pdf(file = pdfname,width = 6,height = 6)
         # par(mfrow=c(2,2))
-        control <- list(iter = 300, batch.size = 100, lr = 0.001)
-        fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
+        control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',region,mnth,loc,'pt',sep='.'))
+        fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc*mnth)
         # save.SPQR(fit.y1.mle.ts,name = modelname1)
         # plotGOF(fit.y1.mle.ts)
@@ -104,8 +102,8 @@ for(mnth in 7:12)
         nx2 = ncol(X2)
         head(X2)
         head(y2)
-        control <- list(iter = 300, batch.size = 100, lr = 0.001)
-        fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
+        control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'pt',sep='.'))
+        fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc*mnth)
         # save.SPQR(fit.y2.mle.ts,name = modelname2)
         # plotGOF(fit.y2.mle.ts)
