@@ -7,7 +7,7 @@ library(usmap)
 library(transport)
 library(gridExtra)
 region = 'SE'
-method = 'QM'
+method = 'CCA'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -46,65 +46,65 @@ y2.cors.1 = NA
 y1y2.cors.1 = NA
 daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
 mnth = 1; loc = 1
-cal.data = vector('list',12)
-for(mnth in 1:12){
-    cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
-    for(loc in 1:25){
-        print(paste(mnth,loc))
-        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        # y2 <- log(0.0001+y2)
-        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        n = n0 + n1
-        y0 <- rep(1:0,each=n0)
-
-        y11 = y1[y0==1]
-        x11 = y11[c(n1,1:(n1-1))]
-        y21 = y2[y0==1]
-        x21 = y21[c(n1,1:(n1-1))]
-
-
-        if(method=='CCA'){
-            qf.y1.mle.ts <- c(gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                              pred.long$tmax_CCA[vecchia.order==loc & pred.months==mnth])
-
-            qf.y2.mle.ts <- c(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                              pred.long$pr_CCA[vecchia.order==loc & pred.months==mnth])
-        }
-        if(method=='QM'){
-            qf.y1.mle.ts <- c(gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                              pred.long$tmax_QR[vecchia.order==loc & pred.months==mnth])
-
-            qf.y2.mle.ts <- c(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                              pred.long$pr_QR[vecchia.order==loc & pred.months==mnth])
-        }
-
-        # qf.y2.mle.ts <- log(0.0001+qf.y2.mle.ts)
-
-        y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
-        y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
-        y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
-        y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
-        y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
-        y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
-
-        cal.array[,1,loc] = y1[y0==0]
-        cal.array[,3,loc] = y1[y0==1]
-        cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
-        cal.array[,4,loc] = y2[y0==0]
-        cal.array[,6,loc] = y2[y0==1]
-        cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
-    }
-    cal.data[[mnth]] = cal.array
-}
-
-save(y1.cors.0,y1.cors.1,y2.cors.0,y2.cors.1,y1y2.cors.0,y1y2.cors.1,cal.data,
-           file = paste0('summary_',model.type,'_',region,'_',method,'_validation.RData'))
+# cal.data = vector('list',12)
+# for(mnth in 1:12){
+#     cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
+#     for(loc in 1:25){
+#         print(paste(mnth,loc))
+#         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                 gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+#         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                 gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+#         # y2 <- log(0.0001+y2)
+#         n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+#         n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+#         n = n0 + n1
+#         y0 <- rep(1:0,each=n0)
+# 
+#         y11 = y1[y0==1]
+#         x11 = y11[c(n1,1:(n1-1))]
+#         y21 = y2[y0==1]
+#         x21 = y21[c(n1,1:(n1-1))]
+# 
+# 
+#         if(method=='CCA'){
+#             qf.y1.mle.ts <- c(gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                               pred.long$tmax_CCA[vecchia.order==loc & pred.months==mnth])
+# 
+#             qf.y2.mle.ts <- c(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                               pred.long$pr_CCA[vecchia.order==loc & pred.months==mnth])
+#         }
+#         if(method=='QM'){
+#             qf.y1.mle.ts <- c(gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                               pred.long$tmax_QR[vecchia.order==loc & pred.months==mnth])
+# 
+#             qf.y2.mle.ts <- c(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+#                               pred.long$pr_QR[vecchia.order==loc & pred.months==mnth])
+#         }
+# 
+#         # qf.y2.mle.ts <- log(0.0001+qf.y2.mle.ts)
+# 
+#         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
+#         y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
+#         y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
+#         y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
+#         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
+#         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
+# 
+#         cal.array[,1,loc] = y1[y0==0]
+#         cal.array[,3,loc] = y1[y0==1]
+#         cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
+#         cal.array[,4,loc] = y2[y0==0]
+#         cal.array[,6,loc] = y2[y0==1]
+#         cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
+#     }
+#     cal.data[[mnth]] = cal.array
+# }
+# 
+# save(y1.cors.0,y1.cors.1,y2.cors.0,y2.cors.1,y1y2.cors.0,y1y2.cors.1,cal.data,
+#            file = paste0('summary_',model.type,'_',region,'_',method,'_validation.RData'))
 load(paste0('summary_',model.type,'_',region,'_',method,'_validation.RData'))
-metrics_all <- rep(NA,9)
+metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
 # for(i in 1:12){
 #     eachmonth[i] = dim(cal.data[[i]])[1]
@@ -355,6 +355,24 @@ legend('topleft',c('GCM','Obs'),pch = c(3,20))
 # spatial correlations RMSE
 metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
 metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
+
+count = 0
+propzero = matrix(NA,300,3)
+length(cal.data)
+for(mnth in 1:12)
+    for(loc in 1:25){
+        count = count+1
+        propzero[count,] <- apply(cal.data[[mnth]][,4:6,loc],2,function(x)mean(round(x,4)==0))        
+    }
+
+pdf(paste0('plots/propzero_',region,'_validation.pdf'),width = 4,height = 4)
+plot(propzero[,c(2,3)],pch=20,col=1,xlab = 'Model',ylab = 'Observed',cex=0.7)
+abline(0,1)
+points(propzero[,c(1,3)],pch=3,col=2,cex=0.7)
+legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(3,20))
+dev.off()
+
+metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+
 metrics_all
 round(metrics_all,4)
-
