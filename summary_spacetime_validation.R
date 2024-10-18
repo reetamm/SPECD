@@ -339,4 +339,4 @@ dev.off()
 metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 
 metrics_all
-round(metrics_all,4)
+round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
