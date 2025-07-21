@@ -6,6 +6,8 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
+library(dplyr)
+library(ggpubr)
 region = 'SW'
 
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -21,8 +23,29 @@ head(coords)
 coords$lon = coords$lon - 360
 GeoLocations <- usmap_transform(coords)
 
-# p1 = plot_usmap(regions ="region", include = c('UT','CO','AZ','NM')) + geom_sf(data = GeoLocations)
-# p2 = plot_usmap(regions ="region", include = 
+# p1 = plot_usmap(regions ="states", include = c('UT','CO','AZ','NM'),fill = "yellow", alpha = 0.25) + 
+#      geom_sf(data = GeoLocations) +
+#     coord_sf(default_crs = sf::st_crs(4326)) +
+#     theme(panel.background = element_rect(colour = "black")) 
+    
+
+if(region=='SW')
+    states <- map_data("state") %>% filter(region %in% c('utah','colorado','arizona','new mexico'))
+if(region=='SE')
+    states <- map_data("state") %>% filter(region %in% c('indiana','ohio','west virginia','kentucky',
+                                                         'virginia','tennessee','north carolina', 'south carolina',
+                                                         'mississippi','alabama','georgia'))
+
+
+ggplot(coords,aes(x = lon,y=lat)) +
+    geom_polygon(data = states, aes(x = long, y = lat, group = group), fill = "gray95",col='black') +
+    geom_tile(data = coords,aes(x=lon,y=lat,col=0),alpha=.25,linewidth = .25) + coord_equal() + theme_bw() +
+    theme(legend.position = 'null',panel.grid = element_blank(), axis.text = element_text(size=15)) + 
+    labs(x='',y='')
+# ggarrange(p1,p2)
+ggsave(filename = paste0(region,'.pdf'),width = 6, height = 6, units = 'in',dpi=72)
+
+# p2 = plot_usmap(regions ="states", include =
 #                     c('Indiana','Ohio','West Virginia','Kentucky',
 #                       'Virginia','Tennessee','North Carolina', 'South Carolina',
 #                       'Mississippi','Alabama','Georgia')) + geom_sf(data = GeoLocations)
