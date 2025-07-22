@@ -8,8 +8,9 @@ s        <- 1:m
 mu       <- c(2*s/m+0,  # Temp-obs
               3*s/m+5,  # Precip-obs
               1*s/m+0,  # Temp-model
-              2*s/m+1)  # Precip-model    
-d        <- rdist(s,s)
+              2*s/m+1)  # Precip-model  
+locs <- expand.grid(1:5,1:5)
+d        <- rdist(locs)
 Omega    <- exp(-d/5)   # Spatial correlation
 rho      <- diag(4)     # Cross correlations
 rho[1,2] <- rho[2,1] <- .8  # Cor(temp,prec) for obs
@@ -32,6 +33,7 @@ Temp0  <- dat[,1:m+0*m]
 Prec0  <- dat[,1:m+1*m]
 Temp1  <- dat[,1:m+2*m]%*%Smooth
 Prec1  <- dat[,1:m+3*m]%*%Smooth
+
 
 par(mfrow=c(2,2))
 matplot(s,t(Temp0),type="l",col="gray",main="Temp - obs")
@@ -69,6 +71,8 @@ summary(c(Prec0))
 #thresholding to 0
 Prec0[Prec0<0] = 0 
 Prec1[Prec1<0] = 0
+
+save(locs,Temp0,Temp1,Prec0,Prec1,file = 'data/simdata.RData')
 
 #log transform like we normally do
 Prec1 = log(Prec1 + 0.0001)
