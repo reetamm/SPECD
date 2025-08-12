@@ -2,15 +2,27 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
 load(file = 'data/simdata.RData')
 
-coords = locs
+coords = as.matrix(locs)
 head(coords)
+
+# Prec0_long <- c(Prec0)
+# Prec1_long <- c(Prec1)
+# Temp0_long <- c(Temp0)
+# Temp1_long <- c(Temp1)
+# locs <- coords %x% rep(1, 1500)
+# 
+# long_data <- cbind(Prec0_long,Prec1_long,Temp0_long,Temp1_long,locs)
+# long_data <- as.data.frame(long_data)
+# names(long_data) <- c('prcp_obs','prcp_mod','tmax_obs','tmax_mod','lat','lon')
+# head(long_data)
+# write.csv(long_data,'data/sim_data.csv')
+
 
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-loc = 1
+loc = 3
 
 
 # Y.range <- range(Y)
@@ -21,8 +33,10 @@ for(loc in 1:25){
     predname1   <- paste0( 'fits/sim/fits_temp_l',loc,'.RDS')
     predname2   <- paste0( 'fits/sim/fits_prcp_l',loc,'.RDS')
     
-    y1 <- c(Temp0[,vecchia.order==loc],Temp1[,vecchia.order==loc])
-    y2 <- c(Prec0[,vecchia.order==loc],Prec1[,vecchia.order==loc])
+    current.loc = vecchia.order[loc]
+    
+    y1 <- c(Temp0[,current.loc],Temp1[,current.loc])
+    y2 <- c(Prec0[,current.loc],Prec1[,current.loc])
     y2 <- log(0.0001+y2)
     n0 <- n1 <- nrow(Temp0)
     n = n0 + n1
@@ -35,8 +49,9 @@ for(loc in 1:25){
     if(loc>1){
         k.end = loc-1
         k.start = max(1,loc-5)
-        for(k in k.start:k.end){
-            x.vec = c(Temp0[,vecchia.order==loc-k],Temp1[vecchia.order==loc-k])
+        for(k in k.end:k.start){
+            vlocs = vecchia.order[k]
+            x.vec = c(Temp0[,vlocs],Temp1[,vlocs])
             X1 = cbind(X1,x.vec)
         }    
     }
@@ -48,7 +63,7 @@ for(loc in 1:25){
     fit.y1.mle.ts <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                           n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc)
     # save.SPQR(fit.y1.mle.ts,name = modelname1)
-    # plotGOF(fit.y1.mle.ts)
+    plotGOF(fit.y1.mle.ts)
     cdf.y1.mle.ts = rep(NA,n)
     for(i in 1:n){
         cdf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1[i,], Y=y1[i], type = "CDF")    
@@ -68,8 +83,9 @@ for(loc in 1:25){
     if(loc>1){
         k.end = loc-1
         k.start = max(1,loc-5)
-        for(k in k.start:k.end){
-            x.vec = c(Prec0[vecchia.order==loc-k],Prec1[vecchia.order==loc-k])
+        for(k in k.end:k.start){
+            vlocs = vecchia.order[k]
+            x.vec = c(Prec0[,vlocs],Prec1[,vlocs])
             x.vec = log(0.0001+x.vec)
             X2 = cbind(X2,x.vec)
         }    
@@ -81,7 +97,7 @@ for(loc in 1:25){
     fit.y2.mle.ts <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
                           n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc)
     # save.SPQR(fit.y2.mle.ts,name = modelname2)
-    # plotGOF(fit.y2.mle.ts)
+    plotGOF(fit.y2.mle.ts)
     cdf.y2.mle.ts = rep(NA,n)
     for(i in 1:n){
         cdf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2[i,], Y=y2[i], type = "CDF")   
@@ -108,20 +124,17 @@ for(loc in 1:25){
         X1_pred = X1[,1]
         k.end = loc-1
         k.start = max(1,loc-5)
-        for(k in k.start:k.end){
-            vecname = paste0('fits/sim/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+        for(k in k.end:k.start){
+            vecname = paste0('fits/sim/fits_temp_l',loc-k,'.RDS')
             x.vec = readRDS(vecname)
             X1_pred = cbind(X1_pred,x.vec)
         }
+        X1_pred[,1] = 1
         qf.y1.mle.ts = rep(NA,n)
         for(i in 1:n){
             if(i%%1000==0)
                 print(i)
-            if(i<=n0+1)
-                x_pred = c(1,X1[i,2],X1[i,-c(1:2)])
-            if(i>n0+1)
-                x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred[i,-c(1:2)])
-            qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
+            qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1_pred[i,], type = "QF",tau=qout11[i])
         }   
     }
     
@@ -141,11 +154,11 @@ for(loc in 1:25){
     }
     
     if(loc>1){
-        X2_pred = cbind(X1_pred,qf.y1.mle.ts,X2[,nx1+1])
+        X2_pred = cbind(X1_pred,qf.y1.mle.ts)
         k.end = loc-1
         k.start = max(1,loc-5)
-        for(k in k.start:k.end){
-            vecname = paste0('fits/',region,'/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+        for(k in k.end:k.start){
+            vecname = paste0('fits/sim/fits_prcp_l',loc-k,'.RDS')
             x.vec = readRDS(vecname)
             X2_pred = cbind(X2_pred,x.vec)
         }
@@ -156,18 +169,14 @@ for(loc in 1:25){
         for(i in 1:n){
             if(i%%1000==0)
                 print(i)
-            if(i<=n0+1)
-                x_pred = c(1,X1[i,-1],y1[i],X2[i,-c(1:nx1)])
-            if(i>n0+1)
-                x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred[i,-c(1:2)],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1],X2_pred[i,(nx1+2):nx2])
-            qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
+            qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2_pred[i,], type = "QF",tau=qout21[i])
         }   
     }
     saveRDS(qf.y2.mle.ts,file = predname2)
     
     pdf(file = pdfname,width = 6,height = 6)
     par(mfrow=c(2,2))
-    
+    # 
     plot(y1,qf.y1.mle.ts,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
     abline(0,1)
     
@@ -203,8 +212,6 @@ for(loc in 1:25){
     
     summary(qf.y2.mle.ts[y0==0])
     summary(qf.y2.mle.ts[y0==1])
-    cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0])
-    cor(qf.y2.mle.ts[y0==1][-1],qf.y2.mle.ts[y0==1][-n0])
     
     summary(y2[y0==1])
     summary(y2[y0==0])
@@ -223,11 +230,10 @@ for(loc in 1:25){
     
     # legend("topright",c("Model","Observations",'MLE-TS'),
     #        col=1:6,lwd=2,bty="n",lty=c(1,1,2,3))
-    
+    # 
     # plot(qf.y1.mle.ts,qf.y2.mle.ts,col = y0+1)
     
-    cor(y1[y0==1],y2[y0==1])
-    cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1])
     dev.off()
     par(mfrow=c(1,1))
 }
+
