@@ -9,6 +9,8 @@ head(coords)
 
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+
 loc = 1
 
 for(loc in 1:25){
@@ -30,9 +32,10 @@ for(loc in 1:25){
     X1 = matrix(y0, ncol=1)
     
     if(loc>1){
-        k.end = loc-1
-        k.start = max(1,loc-5)
-        for(k in k.end:k.start){
+        nns <- NNarray[loc,] # select the correct row
+        nns <- nns[complete.cases(nns)] # drop the NAs
+        nns <- nns[-1] # drop the response
+        for(k in nns){
             vlocs = vecchia.order[k]
             x.vec = c(Temp0[,vlocs],Temp1[,vlocs])
             X1 = cbind(X1,x.vec)
@@ -63,9 +66,7 @@ for(loc in 1:25){
     X2 = cbind(X1,y1)
     nx1 = ncol(X1)+1
     if(loc>1){
-        k.end = loc-1
-        k.start = max(1,loc-5)
-        for(k in k.end:k.start){
+        for(k in nns){
             vlocs = vecchia.order[k]
             x.vec = c(Prec0[,vlocs],Prec1[,vlocs])
             x.vec = log(0.0001+x.vec)
@@ -103,9 +104,7 @@ for(loc in 1:25){
     
     if(loc>1){
         X1_pred = X1[,1]
-        k.end = loc-1
-        k.start = max(1,loc-5)
-        for(k in k.end:k.start){
+        for(k in nns){
             vecname = paste0('fits/sim/fits_temp_l',loc-k,'.RDS')
             x.vec = readRDS(vecname)
             X1_pred = cbind(X1_pred,x.vec)
@@ -136,9 +135,7 @@ for(loc in 1:25){
     
     if(loc>1){
         X2_pred = cbind(X1_pred,qf.y1.mle)
-        k.end = loc-1
-        k.start = max(1,loc-5)
-        for(k in k.end:k.start){
+        for(k in nns){
             vecname = paste0('fits/sim/fits_prcp_l',loc-k,'.RDS')
             x.vec = readRDS(vecname)
             X2_pred = cbind(X2_pred,x.vec)
