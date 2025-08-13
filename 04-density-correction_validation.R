@@ -18,13 +18,14 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 1
 mnth = 1
 
 
 for(mnth in 1:12)
     for(loc in 1:25){
-        pdfname = paste0('plots/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.pdf')
+        pdfname = paste0('plots/',region,'_validation/fits_m',mnth,'_l',loc,'.pdf')
         predname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
         predname2 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
@@ -46,45 +47,27 @@ for(mnth in 1:12)
         
         # temperature covariates for training data
         y0_train <- rep(1:0,each=n0_train)
-        y11_train = y1_train[y0_train==1]
-        x11_train = y11_train[c(n1_train,1:(n1_train-1))]
-        cor(cbind(y11_train,x11_train))
-        y10_train = y1_train[y0_train==0]
-        x10_train = y10_train[c(n0_train,1:(n0_train-1))]
-        cor(cbind(y10_train,x10_train))
-        y1_train = c(y11_train,y10_train)
-        x1_train = c(x11_train,x10_train)
-        X1_train = cbind(y0_train,x1_train)
+        X1_train = matrix(y0_train,ncol=1)
         
         if(loc>1){
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+            nns <- NNarray[loc,] # select the correct row
+            nns <- nns[complete.cases(nns)] # drop the NAs
+            nns <- nns[-1] # drop the response
+            for(k in nns){
+                x.vec = c(obs.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000])
                 X1_train = cbind(X1_train,x.vec)
             }    
         }
         
         # temperature covariates for testing data
         y0_test  <- rep(1:0,each=n0_test)
-        y0_test <- rep(1:0,each=n0_test)
-        y11_test = y1_test[y0_test==1]
-        x11_test = y11_test[c(n1_test,1:(n1_test-1))]
-        cor(cbind(y11_test,x11_test))
-        y10_test = y1_test[y0_test==0]
-        x10_test = y10_test[c(n0_test,1:(n0_test-1))]
-        cor(cbind(y10_test,x10_test))
-        y1_test = c(y11_test,y10_test)
-        x1_test = c(x11_test,x10_test)
-        X1_test = cbind(y0_test,x1_test)
+        X1_test = matrix(y0_test,ncol=1)
         
         if(loc>1){
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                x.vec = c(obs.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$tmax[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
+            for(k in nns){
+                x.vec = c(obs.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years > 2000])
                 X1_test = cbind(X1_test,x.vec)
             }    
         }
@@ -103,17 +86,17 @@ for(mnth in 1:12)
         }
         
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',region,mnth,loc,'v.pt',sep='.'))
-        fit.y1.mle.ts <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
+        fit.y1.mle <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
-        cdf.y1.mle.ts = rep(NA,n_test)
+        cdf.y1.mle = rep(NA,n_test)
         for(i in 1:n_test){
-            cdf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = X1_test_scaled[i,], Y=y1_test_scaled[i], type = "CDF")    
+            cdf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_test_scaled[i,], Y=y1_test_scaled[i], type = "CDF")    
             if(i%%100==0)
                 print(i)
         }
         
-        qout11 <- cdf.y1.mle.ts
+        qout11 <- cdf.y1.mle
         adjust = which(qout11>0.99999)
         qout11[adjust] = 0.99999
         
@@ -121,22 +104,15 @@ for(mnth in 1:12)
         ###################################
         ###################################
         # Precip covariates for training data
-        y21_train = y2_train[y0_train==1]
-        x21_train = y21_train[c(n1_train,1:(n1_train-1))]
-        cor(cbind(y21_train,x21_train))
-        y20_train = y2_train[y0_train==0]
-        x20_train = y20_train[c(n0_train,1:(n0_train-1))]
-        cor(cbind(y20_train,x20_train))
-        y2_train = c(y21_train,y20_train)
-        x2_train = c(x21_train,x20_train)
-        X2_train = cbind(X1_train,y1_train,x2_train)
+        X2_train = cbind(X1_train,y1_train)
         nx1 = ncol(X1_train)+1
         if(loc>1){
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years <= 2000])
+            nns <- NNarray[loc,] # select the correct row
+            nns <- nns[complete.cases(nns)] # drop the NAs
+            nns <- nns[-1] # drop the response
+            for(k in nns){
+                x.vec = c(obs.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000])
                 x.vec = log(0.0001+x.vec)
                 X2_train = cbind(X2_train,x.vec)
             }    
@@ -144,22 +120,12 @@ for(mnth in 1:12)
         nx2 = ncol(X2_train)
         
         # Precip covariates for testing data
-        y21_test = y2_test[y0_test==1]
-        x21_test = y21_test[c(n1_test,1:(n1_test-1))]
-        cor(cbind(y21_test,x21_test))
-        y20_test = y2_test[y0_test==0]
-        x20_test = y20_test[c(n0_test,1:(n0_test-1))]
-        cor(cbind(y20_test,x20_test))
-        y2_test = c(y21_test,y20_test)
-        x2_test = c(x21_test,x20_test)
-        X2_test = cbind(X1_test,y1_test,x2_test)
+        X2_test = cbind(X1_test,y1_test)
         nx1 = ncol(X1_test)+1
         if(loc>1){
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                x.vec = c(obs.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$pr[vecchia.order==loc-k & gcm.months==mnth & gcm.years > 2000])
+            for(k in nns){
+                x.vec = c(obs.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years > 2000])
                 x.vec = log(0.0001+x.vec)
                 X2_test = cbind(X2_test,x.vec)
             }    
@@ -180,17 +146,17 @@ for(mnth in 1:12)
         }
       
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'v.pt',sep='.'))
-        fit.y2.mle.ts <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
+        fit.y2.mle <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
-        cdf.y2.mle.ts = rep(NA,n_test)
+        cdf.y2.mle = rep(NA,n_test)
         for(i in 1:n_test){
-            cdf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = X2_test_scaled[i,], Y=y2_test_scaled[i], type = "CDF")   
+            cdf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_test_scaled[i,], Y=y2_test_scaled[i], type = "CDF")   
             if(i%%1000==0)
                 print(i)
         }
         
-        qout21 <- cdf.y2.mle.ts
+        qout21 <- cdf.y2.mle
         adjust = which(qout21>0.99999)
         qout21[adjust] = 0.99999
         
@@ -198,15 +164,15 @@ for(mnth in 1:12)
  ############### Predictions temp     
         
         if(loc==1){
-            qf.y1.mle.ts = rep(NA,n_test)
+            qf.y1.mle = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%1000==0)
                     print(i)
                 if(i<=n0_test+1) #these are the ones which are already observed (+ the first gcm one)
                     x_pred = c(1,X1_test_scaled[i,-1])
                 if(i>n0_test+1) #these are the GCM ones which therefore need the time lagged GCM predictions
-                    x_pred = c(1,qf.y1.mle.ts[i-1])
-                qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
+                    x_pred = c(1,qf.y1.mle[i-1])
+                qf.y1.mle[i] <- predict(fit.y1.mle,   X = x_pred, type = "QF",tau=qout11[i])
             }    
         }
         
@@ -227,36 +193,36 @@ for(mnth in 1:12)
             }
             
             
-            qf.y1.mle.ts = rep(NA,n_test)
+            qf.y1.mle = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
                 if(i<=n0_test+1)
                     x_pred = c(1,X1_test_scaled[i,2],X1_test_scaled[i,-c(1:2)])
                 if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred_scaled[i,-c(1:2)])
-                qf.y1.mle.ts[i] <- predict(fit.y1.mle.ts,   X = x_pred, type = "QF",tau=qout11[i])
+                    x_pred = c(1,qf.y1.mle[i-1],X1_pred_scaled[i,-c(1:2)])
+                qf.y1.mle[i] <- predict(fit.y1.mle,   X = x_pred, type = "QF",tau=qout11[i])
             }   
         }
         
-        y1_pred <- qf.y1.mle.ts*diff(y1_range) + y1_range[1]
+        y1_pred <- qf.y1.mle*diff(y1_range) + y1_range[1]
         saveRDS(y1_pred,file = predname1)
  ############### Predictions prcp        
         if(loc==1){
-            qf.y2.mle.ts = rep(NA,n_test)
+            qf.y2.mle = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%1000==0)
                     print(i)
                 if(i<=n0_test+1)
                     x_pred = c(1,X1_test_scaled[i,-1],y1_test_scaled[i],X2_test_scaled[i,-c(1:nx1)])
                 if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle.ts[i-1],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1])
-                qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
+                    x_pred = c(1,qf.y1.mle[i-1],qf.y1.mle[i],qf.y2.mle[i-1])
+                qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
             } 
         }
         
         if(loc>1){
-            X2_pred = cbind(X1_pred_scaled,qf.y1.mle.ts,X2_test_scaled[,nx1+1])
+            X2_pred = cbind(X1_pred_scaled,qf.y1.mle,X2_test_scaled[,nx1+1])
             nx3 <- ncol(X2_pred)+1
             k.end = loc-1
             k.start = max(1,loc-5)
@@ -272,7 +238,7 @@ for(mnth in 1:12)
                 X2_pred_scaled[,i] <- (X2_pred[,i] - x2_range[1,i])/diff(x2_range[,i])
             }
             
-            qf.y2.mle.ts = rep(NA,n_test)
+            qf.y2.mle = rep(NA,n_test)
       
             for(i in 1:n_test){
                 if(i%%100==0)
@@ -280,11 +246,11 @@ for(mnth in 1:12)
                 if(i<=n0_test+1)
                     x_pred = c(1,X1_test_scaled[i,-1],y1_test_scaled[i],X2_test_scaled[i,-c(1:nx1)])
                 if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle.ts[i-1],X1_pred_scaled[i,-c(1:2)],qf.y1.mle.ts[i],qf.y2.mle.ts[i-1],X2_pred_scaled[i,(nx1+2):nx2])
-                qf.y2.mle.ts[i] <- predict(fit.y2.mle.ts,   X = x_pred, type = "QF",tau=qout21[i])
+                    x_pred = c(1,qf.y1.mle[i-1],X1_pred_scaled[i,-c(1:2)],qf.y1.mle[i],qf.y2.mle[i-1],X2_pred_scaled[i,(nx1+2):nx2])
+                qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
             }   
         }
-        y2_pred <- qf.y2.mle.ts*diff(y2_range) + y2_range[1]
+        y2_pred <- qf.y2.mle*diff(y2_range) + y2_range[1]
         saveRDS(y2_pred,file = predname2)
         
         pdf(file = pdfname,width = 6,height = 6)

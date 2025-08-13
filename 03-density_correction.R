@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SE'
+region = 'SW'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -20,11 +20,11 @@ vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 
 loc = 2
-mnth = 1
-mnths = 10:12
+mnth = 5
+mnths = 3:3
 
 for(mnth in mnths)
-    for(loc in 1:25){
+    for(loc in 9:25){
         pdfname     <- paste0('plots/',region,'/fits_m',mnth,'_l',loc,'.pdf')
         predname1   <- paste0( 'fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
         predname2   <- paste0( 'fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
