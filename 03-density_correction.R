@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
+region = 'SE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -19,12 +19,12 @@ set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 
-loc = 10
-mnth = 5
-mnths = 3:3
+loc = 1
+mnth = 1
+mnths = 1:1
 loc.vector <- 1:25
 for(mnth in mnths)
-    for(loc in 9:25){
+    for(loc in 1:25){
         
         cur.loc <- vecchia.order[loc]
         nns <- NNarray[loc,] # select the correct row
@@ -36,14 +36,14 @@ for(mnth in mnths)
         predname1   <- paste0( 'fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
         predname2   <- paste0( 'fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
-        y1 <- c(obs.long$tmax[loc.vector==loc & gcm.months==mnth],
-                gcm.long$tmax[loc.vector==loc & gcm.months==mnth])
-        y2 <- c(obs.long$pr[loc.vector==loc & gcm.months==mnth],
-                gcm.long$pr[loc.vector==loc & gcm.months==mnth])
+        y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth],
+                gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth])
+        y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth],
+                gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
         y2 <- log(0.0001+y2)
         
-        n0 = length(gcm.long$pr[loc.vector==loc & gcm.months==mnth]) 
-        n1 = length(obs.long$pr[loc.vector==loc & gcm.months==mnth])
+        n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth]) 
+        n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
         
