@@ -17,7 +17,7 @@ Prec0 <- Prec0[,vecchia.order]
 Prec1 <- Prec1[,vecchia.order]
 loc = 1
 
-for(loc in 1:6){
+for(loc in 7:25){
     pdfname     <- paste0('plots/sim/fits_l',loc,'.pdf')
     predname1   <- paste0( 'fits/sim/fits_temp_l',loc,'.RDS')
     predname2   <- paste0( 'fits/sim/fits_prcp_l',loc,'.RDS')
