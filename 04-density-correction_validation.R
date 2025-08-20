@@ -114,9 +114,6 @@ for(mnth in mnths)
         X2_train = cbind(X1_train,y1_train)
         nx1 = ncol(X1_train)+1
         if(loc>1){
-            nns <- NNarray[loc,] # select the correct row
-            nns <- nns[complete.cases(nns)] # drop the NAs
-            nns <- nns[-1] # drop the response
             for(k in nns){
                 x.vec = c(obs.long$pr[loc.vector==k & gcm.months==mnth & gcm.years <= 2000],
                           gcm.long$pr[loc.vector==k & gcm.months==mnth & gcm.years <= 2000])
