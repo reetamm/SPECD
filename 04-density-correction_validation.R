@@ -22,22 +22,29 @@ NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 3
 mnth = 1
 mnths = 1:3
-
+loc.vector <- 1:25
 
 for(mnth in mnths)
     for(loc in 1:25){
+        
+        cur.loc <- vecchia.order[loc]
+        nns <- NNarray[loc,] # select the correct row
+        nns <- nns[complete.cases(nns)] # drop the NAs
+        nns <- nns[-1] # drop the response
+        nns <- vecchia.order[nns]
+        
         pdfname = paste0('plots/',region,'_validation/fits_m',mnth,'_l',loc,'.pdf')
         predname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
         predname2 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
         
-        y1_train <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
-                      gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
-        y2_train <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000],
-                        gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years <= 2000])
-        y1_test  <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                      gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2_test  <- c(  obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                        gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        y1_train <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000],
+                      gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000])
+        y2_train <- c(  obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000],
+                        gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000])
+        y1_test  <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000],
+                      gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
+        y2_test  <- c(  obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000],
+                        gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         y2_train <- log(0.0001+y2_train)
         y2_test <- log(0.0001+y2_test)
         
@@ -51,12 +58,9 @@ for(mnth in mnths)
         X1_train = matrix(y0_train,ncol=1)
         
         if(loc>1){
-            nns <- NNarray[loc,] # select the correct row
-            nns <- nns[complete.cases(nns)] # drop the NAs
-            nns <- nns[-1] # drop the response
             for(k in nns){
-                x.vec = c(obs.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000])
+                x.vec = c(obs.long$tmax[loc.vector==k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$tmax[loc.vector==k & gcm.months==mnth & gcm.years <= 2000])
                 X1_train = cbind(X1_train,x.vec)
             }    
         }
@@ -67,8 +71,8 @@ for(mnth in mnths)
         
         if(loc>1){
             for(k in nns){
-                x.vec = c(obs.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$tmax[vecchia.order==k & gcm.months==mnth & gcm.years > 2000])
+                x.vec = c(obs.long$tmax[loc.vector==k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$tmax[loc.vector==k & gcm.months==mnth & gcm.years > 2000])
                 X1_test = cbind(X1_test,x.vec)
             }    
         }
@@ -114,8 +118,8 @@ for(mnth in mnths)
             nns <- nns[complete.cases(nns)] # drop the NAs
             nns <- nns[-1] # drop the response
             for(k in nns){
-                x.vec = c(obs.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000],
-                          gcm.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years <= 2000])
+                x.vec = c(obs.long$pr[loc.vector==k & gcm.months==mnth & gcm.years <= 2000],
+                          gcm.long$pr[loc.vector==k & gcm.months==mnth & gcm.years <= 2000])
                 x.vec = log(0.0001+x.vec)
                 X2_train = cbind(X2_train,x.vec)
             }    
@@ -127,8 +131,8 @@ for(mnth in mnths)
         nx1 = ncol(X1_test)+1
         if(loc>1){
             for(k in nns){
-                x.vec = c(obs.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years > 2000],
-                          gcm.long$pr[vecchia.order==k & gcm.months==mnth & gcm.years > 2000])
+                x.vec = c(obs.long$pr[loc.vector==k & gcm.months==mnth & gcm.years > 2000],
+                          gcm.long$pr[loc.vector==k & gcm.months==mnth & gcm.years > 2000])
                 x.vec = log(0.0001+x.vec)
                 X2_test = cbind(X2_test,x.vec)
             }    
@@ -165,6 +169,10 @@ for(mnth in mnths)
         adjust = which(qout21>0.99999)
         qout21[adjust] = 0.99999
         
+        ###### vecchia locs for predictions
+        nns <- NNarray[loc,] # select the correct row
+        nns <- nns[complete.cases(nns)] # drop the NAs
+        nns <- nns[-1] # drop the response
         
  ############### Predictions temp     
         print("Predictions temp")
