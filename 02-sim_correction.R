@@ -8,20 +8,24 @@ coords = as.matrix(locs)
 head(coords)
 
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+vecchia.order = order_maxmin(coords,lonlat = F)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 
+Temp0 <- Temp0[,vecchia.order]
+Temp1 <- Temp1[,vecchia.order]
+Prec0 <- Prec0[,vecchia.order]
+Prec1 <- Prec1[,vecchia.order]
 loc = 1
 
-for(loc in 1:25){
+for(loc in 1:6){
     pdfname     <- paste0('plots/sim/fits_l',loc,'.pdf')
     predname1   <- paste0( 'fits/sim/fits_temp_l',loc,'.RDS')
     predname2   <- paste0( 'fits/sim/fits_prcp_l',loc,'.RDS')
     
-    current.loc = vecchia.order[loc]
+    # current.loc = vecchia.order[loc]
     
-    y1 <- c(Temp0[,current.loc],Temp1[,current.loc])
-    y2 <- c(Prec0[,current.loc],Prec1[,current.loc])
+    y1 <- c(Temp0[,loc],Temp1[,loc])
+    y2 <- c(Prec0[,loc],Prec1[,loc])
     y2 <- log(0.0001+y2)
     n0 <- n1 <- nrow(Temp0)
     n = n0 + n1
@@ -36,8 +40,9 @@ for(loc in 1:25){
         nns <- nns[complete.cases(nns)] # drop the NAs
         nns <- nns[-1] # drop the response
         for(k in nns){
-            vlocs = vecchia.order[k]
-            x.vec = c(Temp0[,vlocs],Temp1[,vlocs])
+            # vlocs = vecchia.order[k]
+            # x.vec = c(Temp0[,vlocs],Temp1[,vlocs])
+            x.vec = c(Temp0[,k],Temp1[,k])
             X1 = cbind(X1,x.vec)
         }    
     }
@@ -67,8 +72,9 @@ for(loc in 1:25){
     nx1 = ncol(X1)+1
     if(loc>1){
         for(k in nns){
-            vlocs = vecchia.order[k]
-            x.vec = c(Prec0[,vlocs],Prec1[,vlocs])
+            # vlocs = vecchia.order[k]
+            # x.vec = c(Prec0[,vlocs],Prec1[,vlocs])
+            x.vec = c(Prec0[,k],Prec1[,k])
             x.vec = log(0.0001+x.vec)
             X2 = cbind(X2,x.vec)
         }    
@@ -105,7 +111,7 @@ for(loc in 1:25){
     if(loc>1){
         X1_pred = X1[,1]
         for(k in nns){
-            vecname = paste0('fits/sim/fits_temp_l',loc-k,'.RDS')
+            vecname = paste0('fits/sim/fits_temp_l',k,'.RDS')
             x.vec = readRDS(vecname)
             X1_pred = cbind(X1_pred,x.vec)
         }
@@ -136,7 +142,7 @@ for(loc in 1:25){
     if(loc>1){
         X2_pred = cbind(X1_pred,qf.y1.mle)
         for(k in nns){
-            vecname = paste0('fits/sim/fits_prcp_l',loc-k,'.RDS')
+            vecname = paste0('fits/sim/fits_prcp_l',k,'.RDS')
             x.vec = readRDS(vecname)
             X2_pred = cbind(X2_pred,x.vec)
         }
