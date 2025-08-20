@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
+region = 'SE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -19,11 +19,12 @@ table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
-loc = 1
+loc = 3
 mnth = 1
+mnths = 1:3
 
 
-for(mnth in 1:12)
+for(mnth in mnths)
     for(loc in 1:25){
         pdfname = paste0('plots/',region,'_validation/fits_m',mnth,'_l',loc,'.pdf')
         predname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
@@ -85,10 +86,12 @@ for(mnth in 1:12)
             X1_test_scaled[,i] <- (X1_test[,i] - x1_range[1,i])/diff(x1_range[,i])
         }
         
+        print("Fitting temp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',region,mnth,loc,'v.pt',sep='.'))
         fit.y1.mle <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
+        print("CDF transform of temp")
         cdf.y1.mle = rep(NA,n_test)
         for(i in 1:n_test){
             cdf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_test_scaled[i,], Y=y1_test_scaled[i], type = "CDF")    
@@ -145,14 +148,16 @@ for(mnth in 1:12)
             X2_test_scaled[,i] <- (X2_test[,i] - x2_range[1,i])/diff(x2_range[,i])
         }
       
+        print("Fitting prcp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'v.pt',sep='.'))
         fit.y2.mle <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
+        print("CDF transform of prcp")
         cdf.y2.mle = rep(NA,n_test)
         for(i in 1:n_test){
             cdf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_test_scaled[i,], Y=y2_test_scaled[i], type = "CDF")   
-            if(i%%1000==0)
+            if(i%%100==0)
                 print(i)
         }
         
@@ -162,26 +167,21 @@ for(mnth in 1:12)
         
         
  ############### Predictions temp     
-        
+        print("Predictions temp")
         if(loc==1){
             qf.y1.mle = rep(NA,n_test)
             for(i in 1:n_test){
-                if(i%%1000==0)
+                if(i%%100==0)
                     print(i)
-                if(i<=n0_test+1) #these are the ones which are already observed (+ the first gcm one)
-                    x_pred = c(1,X1_test_scaled[i,-1])
-                if(i>n0_test+1) #these are the GCM ones which therefore need the time lagged GCM predictions
-                    x_pred = c(1,qf.y1.mle[i-1])
+               x_pred = 1
                 qf.y1.mle[i] <- predict(fit.y1.mle,   X = x_pred, type = "QF",tau=qout11[i])
             }    
         }
         
         if(loc>1){
-            X1_pred = X1_test[,1:2]
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc-k,'.RDS')
+            X1_pred = X1_test[,1]
+            for(k in nns){
+                vecname = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -192,42 +192,37 @@ for(mnth in 1:12)
                 X1_pred_scaled[,i] <- (X1_pred[,i] - x1_range[1,i])/diff(x1_range[,i])
             }
             
-            
+            X1_pred_scaled[,1] <- 1
             qf.y1.mle = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
-                if(i<=n0_test+1)
-                    x_pred = c(1,X1_test_scaled[i,2],X1_test_scaled[i,-c(1:2)])
-                if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle[i-1],X1_pred_scaled[i,-c(1:2)])
-                qf.y1.mle[i] <- predict(fit.y1.mle,   X = x_pred, type = "QF",tau=qout11[i])
+                qf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_pred_scaled[i,], type = "QF",tau=qout11[i])
             }   
         }
         
         y1_pred <- qf.y1.mle*diff(y1_range) + y1_range[1]
         saveRDS(y1_pred,file = predname1)
  ############### Predictions prcp        
+        print("Predictions prcp")
         if(loc==1){
             qf.y2.mle = rep(NA,n_test)
             for(i in 1:n_test){
-                if(i%%1000==0)
+                if(i%%100==0)
                     print(i)
-                if(i<=n0_test+1)
-                    x_pred = c(1,X1_test_scaled[i,-1],y1_test_scaled[i],X2_test_scaled[i,-c(1:nx1)])
-                if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle[i-1],qf.y1.mle[i],qf.y2.mle[i-1])
+                if(i<=n0_test)
+                    x_pred = c(1,y1_test_scaled[i])
+                if(i>n0_test)
+                    x_pred = c(1,qf.y1.mle[i])
                 qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
             } 
         }
         
         if(loc>1){
-            X2_pred = cbind(X1_pred_scaled,qf.y1.mle,X2_test_scaled[,nx1+1])
+            X2_pred = cbind(X1_pred_scaled,qf.y1.mle)
             nx3 <- ncol(X2_pred)+1
-            k.end = loc-1
-            k.start = max(1,loc-5)
-            for(k in k.start:k.end){
-                vecname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc-k,'.RDS')
+            for(k in nns){
+                vecname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }
@@ -239,15 +234,12 @@ for(mnth in 1:12)
             }
             
             qf.y2.mle = rep(NA,n_test)
-      
+            X2_pred_scaled[,1] <- 1
+
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
-                if(i<=n0_test+1)
-                    x_pred = c(1,X1_test_scaled[i,-1],y1_test_scaled[i],X2_test_scaled[i,-c(1:nx1)])
-                if(i>n0_test+1)
-                    x_pred = c(1,qf.y1.mle[i-1],X1_pred_scaled[i,-c(1:2)],qf.y1.mle[i],qf.y2.mle[i-1],X2_pred_scaled[i,(nx1+2):nx2])
-                qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
+                qf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_pred_scaled[i,], type = "QF",tau=qout21[i])
             }   
         }
         y2_pred <- qf.y2.mle*diff(y2_range) + y2_range[1]
@@ -261,8 +253,6 @@ for(mnth in 1:12)
         
         summary(y1_pred[y0_test==0])
         summary(y1_pred[y0_test==1])
-        cor(y1_pred[y0_test==0][-1],y1_pred[y0_test==0][-n0_test])
-        cor(y1_pred[y0_test==1][-1],y1_pred[y0_test==1][-n0_test])
         
         summary(y1_test[y0_test==1])
         summary(y1_test[y0_test==0])
@@ -286,8 +276,6 @@ for(mnth in 1:12)
         
         summary(y2_pred[y0_test==0])
         summary(y2_pred[y0_test==1])
-        cor(y2_pred[y0_test==0][-1],y2_pred[y0_test==0][-n0_test])
-        cor(y2_pred[y0_test==1][-1],y2_pred[y0_test==1][-n0_test])
         
         summary(y2_test[y0_test==1])
         summary(y2_test[y0_test==0])
@@ -304,9 +292,6 @@ for(mnth in 1:12)
         lines(d1,col=2)
         lines(d2,col=2,lty=2)
         
-        
-        cor(y1_test[y0_test==1],y2_test[y0_test==1])
-        cor(y1_pred[y0_test==1],y2_pred[y0_test==1])
         par(mfrow=c(1,1))
         dev.off()
     }

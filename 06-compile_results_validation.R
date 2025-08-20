@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 model.type = 'spacetime'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -42,58 +42,58 @@ y2.cors.2 = NA
 y1y2.cors.2 = NA
 daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
-# cal.data = vector('list',12)
-# for(mnth in 1:12){
-#     cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
-#     for(loc in 1:25){
-#         print(paste(mnth,loc))
-#         y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-#                 gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-#         y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-#                 gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-#         # y2 <- log(0.0001+y2)
-#         n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-#         n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-#         n = n0 + n1
-#         y0 <- rep(1:0,each=n0)
-# 
-#         y10 = y1[y0==0]
-#         y11 = y1[y0==1]
-#         x10 = y10[c(n1,1:(n1-1))]
-#         x11 = y11[c(n1,1:(n1-1))]
-#         y20 = y2[y0==0]
-#         y21 = y2[y0==1]
-#         x20 = y20[c(n1,1:(n1-1))]
-#         x21 = y21[c(n1,1:(n1-1))]
-# 
-#         envname = paste0('fits/',region,'_validation/',model.type,'/fits_temp_m',mnth,'_l',loc,'.RDS')
-#         qf.y1.mle.ts <- readRDS(envname)
-#         envname = paste0('fits/',region,'_validation/',model.type,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
-#         qf.y2.mle.ts <- readRDS(envname)
-#         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
-#         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
-#         y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
-#         y1.cors.2 = c(y1.cors.2,cor(cbind(y10,x10))[1,2])
-#         y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
-#         y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
-#         y2.cors.2 = c(y2.cors.2,cor(cbind(y20,x20))[1,2])
-#         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
-#         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
-#         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
-# 
-#         cal.array[,1,loc] = y1[y0==0]
-#         cal.array[,3,loc] = y1[y0==1]
-#         cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
-#         cal.array[,4,loc] = y2[y0==0]
-#         cal.array[,6,loc] = y2[y0==1]
-#         cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
-#     }
-#     cal.data[[mnth]] = cal.array
-# }
-# 
-# save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
-#      y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-#            file = paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
+cal.data = vector('list',12)
+for(mnth in 1:12){
+    cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
+    for(loc in 1:25){
+        print(paste(mnth,loc))
+        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+                gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
+                gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        # y2 <- log(0.0001+y2)
+        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        n = n0 + n1
+        y0 <- rep(1:0,each=n0)
+
+        y10 = y1[y0==0]
+        y11 = y1[y0==1]
+        x10 = y10[c(n1,1:(n1-1))]
+        x11 = y11[c(n1,1:(n1-1))]
+        y20 = y2[y0==0]
+        y21 = y2[y0==1]
+        x20 = y20[c(n1,1:(n1-1))]
+        x21 = y21[c(n1,1:(n1-1))]
+
+        envname = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
+        qf.y1.mle.ts <- readRDS(envname)
+        envname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        qf.y2.mle.ts <- readRDS(envname)
+        qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
+        y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
+        y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
+        y1.cors.2 = c(y1.cors.2,cor(cbind(y10,x10))[1,2])
+        y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
+        y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
+        y2.cors.2 = c(y2.cors.2,cor(cbind(y20,x20))[1,2])
+        y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
+        y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
+        y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
+
+        cal.array[,1,loc] = y1[y0==0]
+        cal.array[,3,loc] = y1[y0==1]
+        cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
+        cal.array[,4,loc] = y2[y0==0]
+        cal.array[,6,loc] = y2[y0==1]
+        cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
+    }
+    cal.data[[mnth]] = cal.array
+}
+
+save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
+     y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
+           file = paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
 load(paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)

@@ -78,9 +78,9 @@ for(mnth in 1:12){
         y21 = y2[y0==1]
         x21 = y21[c(n1,1:(n1-1))]
 
-        envname = paste0('fits/',region,'/spacetime/fits_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'/spacetime/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
         y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
@@ -100,8 +100,8 @@ for(mnth in 1:12){
 }
 
 save(y1.cors.0,y1.cors.1,y2.cors.0,y2.cors.1,y1y2.cors.0,y1y2.cors.1,cal.data,
-           file = paste0('summary_spacetime_',region,'.RData'))
-load(paste0('summary_spacetime_',region,'.RData'))
+           file = paste0('summary_',region,'.RData'))
+load(paste0('summary_',region,'.RData'))
 eachmonth = rep(NA,12)
 # for(i in 1:12){
 #     eachmonth[i] = dim(cal.data[[i]])[1]

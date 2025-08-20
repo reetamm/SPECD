@@ -19,7 +19,7 @@ set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 
-loc = 2
+loc = 10
 mnth = 5
 mnths = 3:3
 
@@ -141,9 +141,9 @@ for(mnth in mnths)
             for(i in 1:n){
                 if(i%%1000==0)
                     print(i)
-                if(i<=n0+1)
+                if(i<=n0)
                     x_pred = c(1,y1[i])
-                if(i>n0+1)
+                if(i>n0)
                     x_pred = c(1,qf.y1.mle[i])
                 qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
             } 
