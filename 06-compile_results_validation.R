@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SW'
+region = 'SE'
 model.type = 'spacetime'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -31,6 +31,12 @@ GeoLocations <- usmap_transform(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+loc = 3
+mnth = 1
+mnths = 11:12
+loc.vector <- 1:25
+
 y1.cors.0 = NA
 y2.cors.0 = NA
 y1y2.cors.0 = NA
@@ -46,14 +52,15 @@ cal.data = vector('list',12)
 for(mnth in 1:12){
     cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
     for(loc in 1:25){
+        cur.loc <- vecchia.order[loc]
         print(paste(mnth,loc))
-        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$tmax[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000],
-                gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000],
+                gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
+        y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000],
+                gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         # y2 <- log(0.0001+y2)
-        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
-        n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth & gcm.years > 2000])
+        n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
+        n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
@@ -114,7 +121,7 @@ wasdist = array(dim = c(25,2))
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 
-pdf(paste0('plots/density_',region,'_validation.pdf'),width = 8, height = 4)
+# pdf(paste0('plots/density_',region,'_validation.pdf'),width = 8, height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 d0 <-density(cal.array2[,1]) # gcm
 d1 <-density(cal.array2[,3]) # obs 
@@ -161,30 +168,30 @@ metrics = data.frame(coords,wasdist,vecchia.order)
 
 mnth = rep(1:12,25)
 
-pdf(paste0('plots/autocorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
-par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+# pdf(paste0('plots/autocorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
+# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+# 
+# lim_min = round(min(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
+# lim_max = round(max(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
+# plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
+#      main = paste(region,'TMAX'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
+# points(y1.cors.2[-1],y1.cors.1[-1],pch=1,col=2,cex=0.75)
+# points(y1.cors.0[-1],y1.cors.1[-1],pch=20,cex=0.75,col=1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
+# abline(0,1)
+# 
+# lim_min = round(min(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
+# lim_max = round(max(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
+# plot(y2.cors.0[-1],y2.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
+#      main = paste(region,'PRCP'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
+# points(y2.cors.2[-1],y2.cors.1[-1],pch=1,col=2,cex=0.75)
+# points(y2.cors.0[-1],y2.cors.1[-1],pch=20,cex=0.75,col=1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,1),col=c(2,1))
+# abline(0,1)
+# par(mfrow=c(1,1))
+# dev.off()
 
-lim_min = round(min(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-lim_max = round(max(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-     main = paste(region,'TMAX'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-points(y1.cors.2[-1],y1.cors.1[-1],pch=1,col=2,cex=0.75)
-points(y1.cors.0[-1],y1.cors.1[-1],pch=20,cex=0.75,col=1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-abline(0,1)
-
-lim_min = round(min(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-lim_max = round(max(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-plot(y2.cors.0[-1],y2.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-     main = paste(region,'PRCP'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-points(y2.cors.2[-1],y2.cors.1[-1],pch=1,col=2,cex=0.75)
-points(y2.cors.0[-1],y2.cors.1[-1],pch=20,cex=0.75,col=1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,1),col=c(2,1))
-abline(0,1)
-par(mfrow=c(1,1))
-dev.off()
-
-pdf(paste0('plots/crosscorr_',model.type,'_',region,'_validation.pdf'),width = 5,height = 4)
+# pdf(paste0('plots/crosscorr_',model.type,'_',region,'_validation.pdf'),width = 5,height = 4)
 par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 lim_min = round(min(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
 lim_max = round(max(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
@@ -244,7 +251,7 @@ for(mnth in 1:12)
         pred_summaries[count,6] = quantile(cal.array[,4,loc],q2)
         pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
     }
-pdf(paste0('plots/summaries_',region,'_validation.pdf'),width = 8,height = 4)
+# pdf(paste0('plots/summaries_',region,'_validation.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 
 lim_min = floor(min(pred_summaries[,7:9],na.rm = T))
@@ -295,7 +302,7 @@ for(i in 1:24)
 mnth = rep(1:300,each=12)
 correls2 = aggregate(correls,by=list(mnth),FUN=mean)
 correls2 = correls2[,-1]
-pdf(paste0('plots/spatcorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
+# pdf(paste0('plots/spatcorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 plot(correls2[,2],correls2[,3],pch=20,col=1,
      xlab = 'Model',ylab = 'Observed',main = paste(region,'TMAX'))
@@ -328,7 +335,7 @@ for(mnth in 1:12)
         propzero[count,] <- apply(cal.data[[mnth]][,4:6,loc],2,function(x)mean(round(x,4)==0))        
     }
 
-pdf(paste0('plots/propzero_',region,'_validation.pdf'),width = 5,height = 4)
+# pdf(paste0('plots/propzero_',region,'_validation.pdf'),width = 5,height = 4)
 plot(propzero[,c(2,3)],pch=20,col=1,xlab = 'Model',ylab = 'Observed',cex=0.75)
 abline(0,1)
 points(propzero[,c(1,3)],pch=1,col=2,cex=0.75)

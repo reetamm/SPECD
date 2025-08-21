@@ -53,6 +53,12 @@ ggsave(filename = paste0(region,'.pdf'),width = 6, height = 6, units = 'in',dpi=
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+loc = 3
+mnth = 1
+mnths = 11:12
+loc.vector <- 1:25
+
 y1.cors.0 = NA
 y2.cors.0 = NA
 y1y2.cors.0 = NA
@@ -65,11 +71,12 @@ cal.data = vector('list',12)
 for(mnth in 1:12){
     cal.array = array(dim = c(daysinmonth[mnth]*64,6,25))
     for(loc in 1:25){
+        cur.loc <- vecchia.order[loc]
         print(paste(mnth,loc))
-        y1 <- c(obs.long$tmax[vecchia.order==loc & gcm.months==mnth],gcm.long$tmax[vecchia.order==loc & gcm.months==mnth])
-        y2 <- c(obs.long$pr[vecchia.order==loc & gcm.months==mnth],gcm.long$pr[vecchia.order==loc & gcm.months==mnth])
+        y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth],gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth])
+        y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth],gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
         y2 <- log(0.0001+y2)
-        n0 = length(gcm.long$pr[vecchia.order==loc & gcm.months==mnth]); n1 = length(obs.long$pr[vecchia.order==loc & gcm.months==mnth])
+        n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth]); n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
@@ -120,7 +127,7 @@ wasdist = array(dim = c(25,2))
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 
-png(paste0('plots/',region,'_density.png'),width = 800, height = 400)
+# png(paste0('plots/',region,'_density.png'),width = 800, height = 400)
 par(mfrow=c(1,2))
 d0 <-density(cal.array2[,1]) # gcm
 d1 <-density(cal.array2[,3]) # obs 
@@ -159,11 +166,11 @@ metrics = data.frame(coords,wasdist,vecchia.order)
 ggplot(metrics,aes(x=lon,y=lat,fill=X1)) + geom_raster() + coord_equal() +
     geom_text(aes(label=round(X1,2)),col='white') + ggtitle(paste(region,'temp')) +
     theme(legend.position = 'none')
-ggsave(filename = paste0('plots/',region,'_wassdist_temp.png'))
+# ggsave(filename = paste0('plots/',region,'_wassdist_temp.png'))
 ggplot(metrics,aes(x=lon,y=lat,fill=X2)) + geom_raster() + coord_equal() +
     geom_text(aes(label=round(X2,2)),col='white') + ggtitle(paste(region,'prcp')) +
     theme(legend.position = 'none')
-ggsave(filename = paste0('plots/',region,'_wassdist_prcp.png'))
+# ggsave(filename = paste0('plots/',region,'_wassdist_prcp.png'))
 
 mnth=12
 loc=1
@@ -174,7 +181,7 @@ lines(1:31,cal.array[1:31,5,loc],type = 'b',col=2,pch=20)
 lines(1:31,cal.array[1:31,6,loc],type = 'b',col=3,pch=20)
 
 season = rep(1:4,each=75)
-png(paste0('plots/autocorr_spacetime_',region,'.png'),width = 800,height = 400)
+# png(paste0('plots/autocorr_spacetime_',region,'.png'),width = 800,height = 400)
 par(mfrow=c(1,2))
 plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'calibrated',ylab = 'observed',
      col=season,main = 'temp autocorrelations',xlim = c(0.5,1),ylim = c(0.5,1))

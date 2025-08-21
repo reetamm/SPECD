@@ -21,7 +21,7 @@ NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 
 loc = 1
 mnth = 1
-mnths = 1:1
+mnths = 3:6
 loc.vector <- 1:25
 for(mnth in mnths)
     for(loc in 1:25){
