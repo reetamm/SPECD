@@ -19,7 +19,7 @@ table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=3)
-loc = 3
+loc = 1
 mnth = 1
 mnths = 3:4
 loc.vector <- 1:25
@@ -284,6 +284,12 @@ for(mnth in mnths)
         
         summary(y2_test[y0_test==1])
         summary(y2_test[y0_test==0])
+        
+        mean(y2_pred[y0_test==0]==y2_range[1])
+        mean(y2_pred[y0_test==1]==y2_range[1])
+        
+        mean(y2_test[y0_test==1]==y2_range[1])
+        mean(y2_test[y0_test==0]==y2_range[1])
         
         d0 <-density(y2_test[y0_test==0])
         d1 <-density(y2_test[y0_test==1])
