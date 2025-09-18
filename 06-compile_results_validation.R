@@ -98,10 +98,10 @@ for(mnth in 1:12){
     cal.data[[mnth]] = cal.array
 }
 
-save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
-     y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-           file = paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
-load(paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
+# save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
+#      y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
+#            file = paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
+# load(paste0('summary_',model.type,'_',region,'_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
 # for(i in 1:12){

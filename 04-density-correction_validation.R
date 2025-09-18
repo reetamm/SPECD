@@ -18,10 +18,10 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=3)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 1
 mnth = 1
-mnths = 3:4
+mnths = 7:12
 loc.vector <- 1:25
 
 for(mnth in mnths)
@@ -104,8 +104,8 @@ for(mnth in mnths)
         }
         
         qout11 <- cdf.y1.mle
-        adjust = which(qout11>0.99999)
-        qout11[adjust] = 0.99999
+        adjust = which(qout11>0.999999)
+        qout11[adjust] = 0.999999
         
         
         ###################################
@@ -163,8 +163,8 @@ for(mnth in mnths)
         }
         
         qout21 <- cdf.y2.mle
-        adjust = which(qout21>0.99999)
-        qout21[adjust] = 0.99999
+        adjust = which(qout21>0.999999)
+        qout21[adjust] = 0.999999
         
         ###### vecchia locs for predictions
         nns <- NNarray[loc,] # select the correct row
@@ -205,7 +205,10 @@ for(mnth in mnths)
                 qf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_pred_scaled[i,], type = "QF",tau=qout11[i])
             }   
         }
-        
+        # adjust0 <- which(is.na(qf.y1.mle) & qout11<0.01)
+        # adjust1 <- which(is.na(qf.y1.mle) & qout11>0.99)
+        # qf.y1.mle[adjust0] = 0
+        # qf.y1.mle[adjust1] = 1
         y1_pred <- qf.y1.mle*diff(y1_range) + y1_range[1]
         saveRDS(y1_pred,file = predname1)
  ############### Predictions prcp        
@@ -247,6 +250,10 @@ for(mnth in mnths)
                 qf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_pred_scaled[i,], type = "QF",tau=qout21[i])
             }   
         }
+        # adjust0 <- which(is.na(qf.y2.mle) & qout21<0.01)
+        # adjust1 <- which(is.na(qf.y2.mle) & qout21>0.99)
+        # qf.y2.mle[adjust0] = 0
+        # qf.y2.mle[adjust1] = 1
         y2_pred <- qf.y2.mle*diff(y2_range) + y2_range[1]
         saveRDS(y2_pred,file = predname2)
         
