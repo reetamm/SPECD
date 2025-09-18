@@ -23,7 +23,7 @@ vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 1
 mnth = 1
-mnths = 1:4
+mnths = 9:12
 loc.vector <- 1:25
 
 for(mnth in mnths)
@@ -188,7 +188,7 @@ for(mnth in mnths)
         if(loc>1){
             X1_pred = X1_test[,1]
             for(k in nns){
-                vecname = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/',method,'_temp_m',mnth,'_l',k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -232,7 +232,7 @@ for(mnth in mnths)
             X2_pred = cbind(X1_pred_scaled,qf.y1)
             nx3 <- ncol(X2_pred)+1
             for(k in nns){
-                vecname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',k,'.RDS')
+                vecname = paste0('fits/',region,'_validation/',method,'_prcp_m',mnth,'_l',k,'.RDS')
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }
