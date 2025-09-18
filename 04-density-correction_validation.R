@@ -3,6 +3,7 @@ library(GpGp)
 library(SPQR)
 library(lubridate)
 region = 'SE'
+method = 'MLE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -15,13 +16,14 @@ str(grid.no)
 coords = aggregate(gcm.long[,2:3],by = list(grid.no), FUN = mean)
 coords = coords[,-1]
 head(coords)
+coords$lon = coords$lon - 360
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 1
 mnth = 1
-mnths = 7:12
+mnths = 1:4
 loc.vector <- 1:25
 
 for(mnth in mnths)
@@ -33,9 +35,9 @@ for(mnth in mnths)
         nns <- nns[-1] # drop the response
         nns <- vecchia.order[nns]
         
-        pdfname = paste0('plots/',region,'_validation/fits_m',mnth,'_l',loc,'.pdf')
-        predname1 = paste0('fits/',region,'_validation/fits_temp_m',mnth,'_l',loc,'.RDS')
-        predname2 = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname = paste0('plots/',region,'_validation/',method,'_m',mnth,'_l',loc,'.pdf')
+        predname1 = paste0('fits/',region,'_validation/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        predname2 = paste0('fits/',region,'_validation/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1_train <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000],
                       gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years <= 2000])
@@ -92,18 +94,18 @@ for(mnth in mnths)
         
         print("Fitting temp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',region,mnth,loc,'v.pt',sep='.'))
-        fit.y1.mle <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
+        fit.y1 <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = method, control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
         print("CDF transform of temp")
-        cdf.y1.mle = rep(NA,n_test)
+        cdf.y1 = rep(NA,n_test)
         for(i in 1:n_test){
-            cdf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_test_scaled[i,], Y=y1_test_scaled[i], type = "CDF")    
+            cdf.y1[i] <- predict(fit.y1,   X = X1_test_scaled[i,], Y=y1_test_scaled[i], type = "CDF")    
             if(i%%100==0)
                 print(i)
         }
         
-        qout11 <- cdf.y1.mle
+        qout11 <- cdf.y1
         adjust = which(qout11>0.999999)
         qout11[adjust] = 0.999999
         
@@ -151,18 +153,18 @@ for(mnth in mnths)
       
         print("Fitting prcp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'v.pt',sep='.'))
-        fit.y2.mle <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
+        fit.y2 <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = method, control = control, normalize = F, verbose = T,use.GPU=F,
                               n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = mnth*loc)
 
         print("CDF transform of prcp")
-        cdf.y2.mle = rep(NA,n_test)
+        cdf.y2 = rep(NA,n_test)
         for(i in 1:n_test){
-            cdf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_test_scaled[i,], Y=y2_test_scaled[i], type = "CDF")   
+            cdf.y2[i] <- predict(fit.y2,   X = X2_test_scaled[i,], Y=y2_test_scaled[i], type = "CDF")   
             if(i%%100==0)
                 print(i)
         }
         
-        qout21 <- cdf.y2.mle
+        qout21 <- cdf.y2
         adjust = which(qout21>0.999999)
         qout21[adjust] = 0.999999
         
@@ -174,12 +176,12 @@ for(mnth in mnths)
  ############### Predictions temp     
         print("Predictions temp")
         if(loc==1){
-            qf.y1.mle = rep(NA,n_test)
+            qf.y1 = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
                x_pred = 1
-                qf.y1.mle[i] <- predict(fit.y1.mle,   X = x_pred, type = "QF",tau=qout11[i])
+                qf.y1[i] <- predict(fit.y1,   X = x_pred, type = "QF",tau=qout11[i])
             }    
         }
         
@@ -198,36 +200,36 @@ for(mnth in mnths)
             }
             
             X1_pred_scaled[,1] <- 1
-            qf.y1.mle = rep(NA,n_test)
+            qf.y1 = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
-                qf.y1.mle[i] <- predict(fit.y1.mle,   X = X1_pred_scaled[i,], type = "QF",tau=qout11[i])
+                qf.y1[i] <- predict(fit.y1,   X = X1_pred_scaled[i,], type = "QF",tau=qout11[i])
             }   
         }
-        # adjust0 <- which(is.na(qf.y1.mle) & qout11<0.01)
-        # adjust1 <- which(is.na(qf.y1.mle) & qout11>0.99)
-        # qf.y1.mle[adjust0] = 0
-        # qf.y1.mle[adjust1] = 1
-        y1_pred <- qf.y1.mle*diff(y1_range) + y1_range[1]
+        # adjust0 <- which(is.na(qf.y1) & qout11<0.01)
+        # adjust1 <- which(is.na(qf.y1) & qout11>0.99)
+        # qf.y1[adjust0] = 0
+        # qf.y1[adjust1] = 1
+        y1_pred <- qf.y1*diff(y1_range) + y1_range[1]
         saveRDS(y1_pred,file = predname1)
  ############### Predictions prcp        
         print("Predictions prcp")
         if(loc==1){
-            qf.y2.mle = rep(NA,n_test)
+            qf.y2 = rep(NA,n_test)
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
                 if(i<=n0_test)
                     x_pred = c(1,y1_test_scaled[i])
                 if(i>n0_test)
-                    x_pred = c(1,qf.y1.mle[i])
-                qf.y2.mle[i] <- predict(fit.y2.mle,   X = x_pred, type = "QF",tau=qout21[i])
+                    x_pred = c(1,qf.y1[i])
+                qf.y2[i] <- predict(fit.y2,   X = x_pred, type = "QF",tau=qout21[i])
             } 
         }
         
         if(loc>1){
-            X2_pred = cbind(X1_pred_scaled,qf.y1.mle)
+            X2_pred = cbind(X1_pred_scaled,qf.y1)
             nx3 <- ncol(X2_pred)+1
             for(k in nns){
                 vecname = paste0('fits/',region,'_validation/fits_prcp_m',mnth,'_l',k,'.RDS')
@@ -241,20 +243,20 @@ for(mnth in mnths)
                 X2_pred_scaled[,i] <- (X2_pred[,i] - x2_range[1,i])/diff(x2_range[,i])
             }
             
-            qf.y2.mle = rep(NA,n_test)
+            qf.y2 = rep(NA,n_test)
             X2_pred_scaled[,1] <- 1
 
             for(i in 1:n_test){
                 if(i%%100==0)
                     print(i)
-                qf.y2.mle[i] <- predict(fit.y2.mle,   X = X2_pred_scaled[i,], type = "QF",tau=qout21[i])
+                qf.y2[i] <- predict(fit.y2,   X = X2_pred_scaled[i,], type = "QF",tau=qout21[i])
             }   
         }
-        # adjust0 <- which(is.na(qf.y2.mle) & qout21<0.01)
-        # adjust1 <- which(is.na(qf.y2.mle) & qout21>0.99)
-        # qf.y2.mle[adjust0] = 0
-        # qf.y2.mle[adjust1] = 1
-        y2_pred <- qf.y2.mle*diff(y2_range) + y2_range[1]
+        # adjust0 <- which(is.na(qf.y2) & qout21<0.01)
+        # adjust1 <- which(is.na(qf.y2) & qout21>0.99)
+        # qf.y2[adjust0] = 0
+        # qf.y2[adjust1] = 1
+        y2_pred <- qf.y2*diff(y2_range) + y2_range[1]
         saveRDS(y2_pred,file = predname2)
         
         pdf(file = pdfname,width = 6,height = 6)
