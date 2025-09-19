@@ -3,7 +3,7 @@ library(GpGp)
 library(SPQR)
 library(lubridate)
 region = 'SE'
-method = 'MLE'
+method = 'MAP'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -16,11 +16,11 @@ str(grid.no)
 coords = aggregate(gcm.long[,2:3],by = list(grid.no), FUN = mean)
 coords = coords[,-1]
 head(coords)
-coords$lon = coords$lon - 360
+# coords$lon = coords$lon - 360
 table(grid.no)
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+vecchia.order = order_maxmin(coords,lonlat = F)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 loc = 1
 mnth = 1
 mnths = 9:12
