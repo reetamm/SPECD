@@ -19,12 +19,12 @@ table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
-loc = 2
+loc = 13
 mnth = 1
 mnths = 3:4
 loc.vector <- 1:25
 
-    for(loc in 1:25){
+    for(loc in 23:25){
         
         cur.loc <- vecchia.order[loc]
         nns <- NNarray[loc,] # select the correct row
@@ -92,7 +92,7 @@ loc.vector <- 1:25
         print("Fitting temp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',region,mnth,loc,'v.pt',sep='.'))
         fit.y1.mle <- SPQR(X = X1_train_scaled, Y = y1_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = loc)
+                              n.hidden = c(30,20), activation = 'sigmoid',n.knots = 20, seed = loc)
         # plotGOF(fit.y1.mle)
         print("CDF transform of temp")
         cdf.y1.mle = rep(NA,n_test)
@@ -151,7 +151,7 @@ loc.vector <- 1:25
         print("Fitting prcp")
         control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',region,mnth,loc,'v.pt',sep='.'))
         fit.y2.mle <- SPQR(X = X2_train_scaled, Y = y2_train_scaled, method = "MLE", control = control, normalize = F, verbose = T,use.GPU=F,
-                              n.hidden = c(30,20), activation = 'relu',n.knots = 20, seed = loc)
+                              n.hidden = c(30,20), activation = 'sigmoid',n.knots = 20, seed = loc)
         # plotGOF(fit.y2.mle)
         print("CDF transform of prcp")
         cdf.y2.mle = rep(NA,n_test)
