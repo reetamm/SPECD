@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
+region = 'SE'
 method = 'MLE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -23,7 +23,7 @@ vecchia.order = order_maxmin(coords,lonlat = F)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 loc = 1
 mnth = 1
-mnths = 1:4
+mnths = 9:12
 loc.vector <- 1:25
 
 

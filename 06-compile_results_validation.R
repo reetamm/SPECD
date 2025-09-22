@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -101,8 +101,8 @@ for(mnth in 1:12){
 
 save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
      y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-           file = paste0('summary_',method,'_',model.type,'_',region,'_lonlat_SPQR_validation.RData'))
-load(paste0('summary_',method,'_',model.type,'_',region,'_SPQR_validation.RData'))
+           file = paste0('summary_',method,'_',model.type,'_',region,'_spacetime_SPQR_validation.RData'))
+load(paste0('summary_',method,'_',model.type,'_',region,'_spacetime_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
 # for(i in 1:12){
@@ -149,7 +149,7 @@ lines(d1,col=1)
 lines(d2,col=1,lty=2)
 legend('topright',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
 par(mfrow=c(1,1))
-dev.off()
+# dev.off()
 
 for(loc in 1:25){
     wasdist[loc,1] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
@@ -202,7 +202,7 @@ points(y1y2.cors.2,y1y2.cors.1,pch=1,col=2,cex=0.75)
 points(y1y2.cors.0,y1y2.cors.1,pch=20,cex=0.75,col=1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 abline(0,1)
-dev.off()
+# dev.off()
 
 ## rmse of autocorrelation and cross correlations
 metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
@@ -273,7 +273,7 @@ points(pred_summaries[,5:4],pch=20,cex=0.75,col=1)
 abline(0,1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 par(mfrow=c(1,1))
-dev.off()
+# dev.off()
 
 # rmse of upper quantiles
 metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
@@ -318,7 +318,7 @@ points(correls2[,5],correls2[,4],col=2,pch=1,cex=0.75)
 points(correls2[,5],correls2[,6],col=1,pch=20,cex=0.75)
 abline(0,1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
-dev.off()
+# dev.off()
 
 # spatial correlations RMSE
 metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
@@ -342,7 +342,7 @@ abline(0,1)
 points(propzero[,c(1,3)],pch=1,col=2,cex=0.75)
 points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
 legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-dev.off()
+# dev.off()
 
 metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 
