@@ -6,8 +6,8 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SW'
-method = 'MLE'
+region = 'SE'
+method = 'MAP'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -31,8 +31,8 @@ GeoLocations <- usmap_transform(coords)
 
 table(grid.no)
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = F)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
+vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 loc = 3
 mnth = 1
 mnths = 11:12
@@ -74,9 +74,9 @@ for(mnth in 1:12){
         x20 = y20[c(n1,1:(n1-1))]
         x21 = y21[c(n1,1:(n1-1))]
 
-        envname = paste0('fits/',region,'_validation/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_space_lonlat/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_validation/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_space_lonlat/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
@@ -101,8 +101,8 @@ for(mnth in 1:12){
 
 save(y1.cors.0,y1.cors.1,y1.cors.2,y2.cors.0,y2.cors.1,y2.cors.2,
      y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-           file = paste0('summary_',method,'_',model.type,'_',region,'_spacetime_SPQR_validation.RData'))
-load(paste0('summary_',method,'_',model.type,'_',region,'_spacetime_SPQR_validation.RData'))
+           file = paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
+load(paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
 # for(i in 1:12){
