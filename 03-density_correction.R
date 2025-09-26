@@ -21,7 +21,7 @@ NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
 
 loc = 1
 mnth = 1
-mnths = 3:6
+mnths = 9:12
 loc.vector <- 1:25
 for(mnth in mnths)
     for(loc in 1:25){
@@ -73,8 +73,8 @@ for(mnth in mnths)
         }
         
         qout11 <- cdf.y1.mle
-        # adjust = which(qout11>0.99999)
-        # qout11[adjust] = 0.99999
+        adjust = which(qout11>0.999999)
+        qout11[adjust] = 0.999999
         
         
         ###################################
@@ -106,8 +106,8 @@ for(mnth in mnths)
         }
         
         qout21 <- cdf.y2.mle
-        # adjust = which(qout21>0.99999)
-        # qout21[adjust] = 0.99999
+        adjust = which(qout21>0.999999)
+        qout21[adjust] = 0.999999
         
         
         ###### vecchia locs for predictions
