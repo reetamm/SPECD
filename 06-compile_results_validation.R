@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SW'
+region = 'SE'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -53,15 +53,14 @@ for(mnth in 1:12){
                 gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000],
                 gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
-        # y2 <- log(0.0001+y2)
         n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth & gcm.years > 2000])
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
-        envname = paste0('fits/',region,'_validation_m10/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_m3/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_validation_m10/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_m3/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
@@ -78,9 +77,9 @@ for(mnth in 1:12){
     cal.data[[mnth]] = cal.array
 }
 
-save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-           file = paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
-load(paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
+# save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
+#            file = paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
+# load(paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
 
@@ -124,14 +123,6 @@ for(loc in 1:25){
 summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
 metrics = data.frame(coords,wasdist,vecchia.order)
-# ggplot(metrics,aes(x=lon,y=lat,fill=X1)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X1,2)),col='white') + ggtitle(paste(region,'temp')) + theme_bw() +
-#     theme(legend.position = 'none') 
-# ggsave(filename = paste0('plots/',region,'_wassdist_temp_validation.png'))
-# ggplot(metrics,aes(x=lon,y=lat,fill=X2)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X2,2)),col='white') + ggtitle(paste(region,'PRCP')) +
-#     theme(legend.position = 'none')
-# ggsave(filename = paste0('plots/',region,'_wassdist_prcp_validation.png'))
 
 mnth = rep(1:12,25)
 # pdf(paste0('plots/crosscorr_',model.type,'_',region,'_validation.pdf'),width = 5,height = 4)
@@ -146,9 +137,6 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 abline(0,1)
 # dev.off()
 
-## rmse of autocorrelation and cross correlations
-# metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
-# metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
 ### rmse of cross correlations
 # metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
 metrics_all[9] = mean(abs((y1y2.cors.0[-1] - y1y2.cors.1[-1])))
@@ -156,7 +144,6 @@ metrics_all[9] = mean(abs((y1y2.cors.0[-1] - y1y2.cors.1[-1])))
 
 q1 = 0.95
 q2 = 0.95
-
 joint.tail = array(NA,dim = c(25,12,3))
 prcp.tail = array(NA,dim = c(25,12,3))
 temp.tail = array(NA,dim = c(25,12,3))
@@ -224,26 +211,21 @@ par(mfrow=c(1,1))
 metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
 metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
 
-# 
-# coords = cbind(coords,vecchia.order)
-# names(coords)
-# ggplot(coords,aes(x=lon,y=lat,col='white'))+geom_tile()+geom_text(aes(label=vecchia.order))
-
 correls = matrix(NA,300*12,8)
 count = 0
 for(mnth in 1:12){
-cal.array = cal.data[[mnth]]
-print(mnth)
-for(i in 1:24)
-    for(j in (i+1):25){
-        count = count+1
-       loc1 = coords[vecchia.order==i,-3]
-       loc2 = coords[vecchia.order==j,-3]
-       correls[count,7] = as.numeric(sqrt((loc1[1]-loc2[1])**2 + (loc1[2]-loc2[2])**2))
-       correls[count,8] = mnth
-       for(k in 1:6)
-           correls[count,k] = cor(cal.array[,k,c(i,j)])[1,2]
-}
+    cal.array = cal.data[[mnth]]
+    print(mnth)
+    for(i in 1:24)
+        for(j in (i+1):25){
+            count = count+1
+           loc1 = coords[vecchia.order==i,-3]
+           loc2 = coords[vecchia.order==j,-3]
+           correls[count,7] = as.numeric(sqrt((loc1[1]-loc2[1])**2 + (loc1[2]-loc2[2])**2))
+           correls[count,8] = mnth
+           for(k in 1:6)
+               correls[count,k] = cor(cal.array[,k,c(i,j)])[1,2]
+    }
 }
 mnth = rep(1:300,each=12)
 correls2 = aggregate(correls,by=list(mnth),FUN=mean)
@@ -296,5 +278,9 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
 
+names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
+                        'wasdist','autocorr','spatcorr','quantile',
+                        'crosscorr','propzero')
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
+

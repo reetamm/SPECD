@@ -18,7 +18,7 @@ head(coords)
 table(grid.no)
 set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=5)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=10)
 
 loc = 1
 mnth = 1

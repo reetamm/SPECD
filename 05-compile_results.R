@@ -20,7 +20,6 @@ str(grid.no)
 coords = aggregate(gcm.long[,2:3],by = list(grid.no), FUN = mean)
 coords = coords[,-1]
 head(coords)
-# coords$lon = coords$lon - 360
 GeoLocations <- usmap_transform(coords)
 
 # p1 = plot_usmap(regions ="region", include = c('UT','CO','AZ','NM')) + geom_sf(data = GeoLocations)
@@ -38,14 +37,8 @@ mnth = 1
 mnths = 11:12
 loc.vector <- 1:25
 
-y1.cors.0 = NA
-y2.cors.0 = NA
 y1y2.cors.0 = NA
-y1.cors.1 = NA
-y2.cors.1 = NA
 y1y2.cors.1 = NA
-y1.cors.2 = NA
-y2.cors.2 = NA
 y1y2.cors.2 = NA
 daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
@@ -65,26 +58,12 @@ for(mnth in 1:12){
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
         
-        y10 = y1[y0==0]
-        y11 = y1[y0==1]
-        x10 = y10[c(n1,1:(n1-1))]
-        x11 = y11[c(n1,1:(n1-1))]
-        y20 = y2[y0==0]
-        y21 = y2[y0==1]
-        x20 = y20[c(n1,1:(n1-1))]
-        x21 = y21[c(n1,1:(n1-1))]
-        
-        envname = paste0('fits/',region,'/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_m5/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_m5/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
-        y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
-        y1.cors.1 = c(y1.cors.1,cor(cbind(y11,x11))[1,2])
-        y1.cors.2 = c(y1.cors.2,cor(cbind(y10,x10))[1,2])
-        y2.cors.0 = c(y2.cors.0,cor(qf.y2.mle.ts[y0==0][-1],qf.y2.mle.ts[y0==0][-n0]))
-        y2.cors.1 = c(y2.cors.1,cor(cbind(y21,x21))[1,2])
-        y2.cors.2 = c(y2.cors.2,cor(cbind(y20,x20))[1,2])
+
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
@@ -105,19 +84,6 @@ for(mnth in 1:12){
 # load(paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
 eachmonth = rep(NA,12)
-# for(i in 1:12){
-#     eachmonth[i] = dim(cal.data[[i]])[1]
-#     cal.data[[i]][,4:6,] = exp(cal.data[[i]][,4:6,])-1
-# }
-wasdist = array(dim = c(25,2))
-# for(mnth in 1:12){
-#     cal.array = cal.data[[mnth]]
-#     for(loc in 1:25){
-#         wasdist[loc,1,mnth] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
-#         wasdist[loc,2,mnth] <- wasserstein1d(cal.array[,5,loc],cal.array[,6,loc])
-#     }
-#     
-# }
 
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
@@ -151,6 +117,7 @@ legend('topright',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
 par(mfrow=c(1,1))
 # dev.off()
 
+wasdist = array(dim = c(25,2))
 for(loc in 1:25){
     wasdist[loc,1] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
     wasdist[loc,2] <- wasserstein1d(cal.array[,5,loc],cal.array[,6,loc])
@@ -158,41 +125,9 @@ for(loc in 1:25){
 summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
 metrics = data.frame(coords,wasdist,vecchia.order)
-# ggplot(metrics,aes(x=lon,y=lat,fill=X1)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X1,2)),col='white') + ggtitle(paste(region,'temp')) + theme_bw() +
-#     theme(legend.position = 'none') 
-# ggsave(filename = paste0('plots/',region,'_wassdist_temp_validation.png'))
-# ggplot(metrics,aes(x=lon,y=lat,fill=X2)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X2,2)),col='white') + ggtitle(paste(region,'PRCP')) +
-#     theme(legend.position = 'none')
-# ggsave(filename = paste0('plots/',region,'_wassdist_prcp_validation.png'))
 
 mnth = rep(1:12,25)
-
-# pdf(paste0('plots/autocorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
-# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-# 
-# lim_min = round(min(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-# lim_max = round(max(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-# plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-#      main = paste(region,'TMAX'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-# points(y1.cors.2[-1],y1.cors.1[-1],pch=1,col=2,cex=0.75)
-# points(y1.cors.0[-1],y1.cors.1[-1],pch=20,cex=0.75,col=1)
-# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-# abline(0,1)
-# 
-# lim_min = round(min(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-# lim_max = round(max(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-# plot(y2.cors.0[-1],y2.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-#      main = paste(region,'PRCP'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-# points(y2.cors.2[-1],y2.cors.1[-1],pch=1,col=2,cex=0.75)
-# points(y2.cors.0[-1],y2.cors.1[-1],pch=20,cex=0.75,col=1)
-# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,1),col=c(2,1))
-# abline(0,1)
-# par(mfrow=c(1,1))
-# dev.off()
-
-# pdf(paste0('plots/crosscorr_',model.type,'_',region,'_validation.pdf'),width = 5,height = 4)
+# pdf(paste0('plots/crosscorr_',model.type,'_',region,'.pdf'),width = 5,height = 4)
 par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 lim_min = round(min(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
 lim_max = round(max(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
@@ -204,16 +139,13 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 abline(0,1)
 # dev.off()
 
-## rmse of autocorrelation and cross correlations
-metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
-metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
 ### rmse of cross correlations
-metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
+# metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
+metrics_all[9] = mean(abs((y1y2.cors.0[-1] - y1y2.cors.1[-1])))
 
 
 q1 = 0.95
 q2 = 0.95
-
 joint.tail = array(NA,dim = c(25,12,3))
 prcp.tail = array(NA,dim = c(25,12,3))
 temp.tail = array(NA,dim = c(25,12,3))
@@ -227,9 +159,8 @@ for(mnth in 1:12)
             prcp.tail[loc,mnth,i] = mean(cal.array[,i+3,loc]>prcp.q)    
             temp.tail[loc,mnth,i] = mean(cal.array[,i,loc]>temp.q)    
         }
-        
-        
     }
+
 
 # compare means and upper quantiles
 # 1 = obs 2 = pred 
@@ -252,7 +183,7 @@ for(mnth in 1:12)
         pred_summaries[count,6] = quantile(cal.array[,4,loc],q2)
         pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
     }
-# pdf(paste0('plots/summaries_',region,'_validation.pdf'),width = 8,height = 4)
+# pdf(paste0('plots/summaries_',region,'.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 
 lim_min = floor(min(pred_summaries[,7:9],na.rm = T))
@@ -281,11 +212,6 @@ par(mfrow=c(1,1))
 metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
 metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
 
-# 
-# coords = cbind(coords,vecchia.order)
-# names(coords)
-# ggplot(coords,aes(x=lon,y=lat,col='white'))+geom_tile()+geom_text(aes(label=vecchia.order))
-
 correls = matrix(NA,300*12,8)
 count = 0
 for(mnth in 1:12){
@@ -305,7 +231,8 @@ for(mnth in 1:12){
 mnth = rep(1:300,each=12)
 correls2 = aggregate(correls,by=list(mnth),FUN=mean)
 correls2 = correls2[,-1]
-# pdf(paste0('plots/spatcorr_',model.type,'_',region,'_validation.pdf'),width = 8,height = 4)
+
+# pdf(paste0('plots/spatcorr_',model.type,'_',region,'.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 plot(correls2[,2],correls2[,3],pch=20,col=1,
      xlab = 'Model',ylab = 'Observed',main = paste(region,'TMAX'))
@@ -325,8 +252,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # spatial correlations RMSE
 # metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
 # metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
-metrics_all[3] = mean(abs((correls2[,2]-correls2[,3])))
-metrics_all[7] = mean(abs((correls2[,5]-correls2[,6])))
+metrics_all[3] = mean(abs((correls[,2]-correls[,3])))
+metrics_all[7] = mean(abs((correls[,5]-correls[,6])))
 metrics_all
 round(metrics_all,4)
 
@@ -350,6 +277,10 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 
 # metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
+
+names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
+                        'wasdist','autocorr','spatcorr','quantile',
+                        'crosscorr','propzero')
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
