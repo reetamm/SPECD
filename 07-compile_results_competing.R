@@ -6,8 +6,8 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
-method = 'QM'
+region = 'SW'
+method = 'CCA'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -262,9 +262,10 @@ par(mfrow=c(1,1))
 # dev.off()
 
 # rmse of upper quantiles
-metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
-metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
-
+# metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
+# metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
+metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
+metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
 # png('tailprob_space.png',width = 1200,height = 400)
 # par(mfrow=c(1,3))
 # tmp = apply(prcp.tail,3,c)
@@ -334,7 +335,9 @@ for(i in 1:24)
 }
 }
 season = rep(1:4,each=900)
-
+mnth = rep(1:300,each=12)
+correls2 = aggregate(correls,by=list(mnth),FUN=mean)
+correls2 = correls2[,-1]
 # png(paste0('plots/spatcorr_',model.type,'_',region,'_validation.png'),width = 800,height = 400)
 par(mfrow=c(1,2))
 plot(correls[,2],correls[,1],col=alpha(1,0.4),pch=3,
@@ -351,8 +354,10 @@ legend('topleft',c('GCM','Obs'),pch = c(3,20))
 # dev.off()
 
 # spatial correlations RMSE
-metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
-metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
+# metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
+# metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
+metrics_all[3] = mean(abs((correls[,2]-correls[,3])))
+metrics_all[7] = mean(abs((correls[,5]-correls[,6])))
 
 count = 0
 propzero = matrix(NA,300,3)
@@ -364,9 +369,11 @@ for(mnth in 1:12)
     }
 
 
-metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+# metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
 
 names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
                         'wasdist','autocorr','spatcorr','quantile',
                         'crosscorr','propzero')
 round(metrics_all,4)
+round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)

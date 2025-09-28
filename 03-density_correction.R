@@ -2,7 +2,8 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SE'
+region = 'SW'
+method = 'MLE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
 
@@ -32,9 +33,9 @@ for(mnth in mnths)
         nns <- nns[-1] # drop the response
         nns <- vecchia.order[nns]
         
-        pdfname     <- paste0('plots/',region,'/fits_m',mnth,'_l',loc,'.pdf')
-        predname1   <- paste0( 'fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
-        predname2   <- paste0( 'fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        pdfname = paste0('plots/',region,'/',method,'_m',mnth,'_l',loc,'.pdf')
+        predname1 = paste0('fits/',region,'/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        predname2 = paste0('fits/',region,'/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         
         y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth],
                 gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth])
@@ -127,7 +128,7 @@ for(mnth in mnths)
         if(loc>1){
             X1_pred = X1[,1]
             for(k in nns){
-                vecname = paste0('fits/',region,'/fits_temp_m',mnth,'_l',k,'.RDS')
+                vecname = paste0('fits/',region,'/',method,'_temp_m',mnth,'_l',k,'.RDS')
                 x.vec = readRDS(vecname)
                 X1_pred = cbind(X1_pred,x.vec)
             }
@@ -158,7 +159,7 @@ for(mnth in mnths)
         if(loc>1){
             X2_pred = cbind(X1_pred,qf.y1.mle)
             for(k in nns){
-                vecname = paste0('fits/',region,'/fits_prcp_m',mnth,'_l',k,'.RDS')                
+                vecname = paste0('fits/',region,'/',method,'_prcp_m',mnth,'_l',k,'.RDS')                
                 x.vec = readRDS(vecname)
                 X2_pred = cbind(X2_pred,x.vec)
             }

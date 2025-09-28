@@ -3,7 +3,7 @@ library(ggplot2)
 library(scales)
 library(lubridate)
 load(file = 'data/simdata.RData')
-method = 'QM'
+method = 'CCA'
 pred.long <- read.csv('data/result_sim_competing.csv')
 coords = as.matrix(locs)
 head(coords)

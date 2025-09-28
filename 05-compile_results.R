@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SW'
+region = 'SE'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -74,9 +74,9 @@ for(mnth in 1:12){
         x20 = y20[c(n1,1:(n1-1))]
         x21 = y21[c(n1,1:(n1-1))]
         
-        envname = paste0('fits/',region,'/fits_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'/fits_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
         y1.cors.0 = c(y1.cors.0,cor(qf.y1.mle.ts[y0==0][-1],qf.y1.mle.ts[y0==0][-n0]))
@@ -276,8 +276,10 @@ par(mfrow=c(1,1))
 # dev.off()
 
 # rmse of upper quantiles
-metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
-metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
+# metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
+# metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
+metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
+metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
 
 # 
 # coords = cbind(coords,vecchia.order)
@@ -321,8 +323,10 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # dev.off()
 
 # spatial correlations RMSE
-metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
-metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
+# metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
+# metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
+metrics_all[3] = mean(abs((correls2[,2]-correls2[,3])))
+metrics_all[7] = mean(abs((correls2[,5]-correls2[,6])))
 metrics_all
 round(metrics_all,4)
 
@@ -344,7 +348,8 @@ points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
 legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # dev.off()
 
-metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+# metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)

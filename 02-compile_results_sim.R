@@ -2,6 +2,7 @@ rm(list = ls())
 library(ggplot2)
 library(scales)
 library(lubridate)
+library(transport)
 load(file = 'data/simdata.RData')
 
 coords = as.matrix(locs)
@@ -108,8 +109,8 @@ abline(0,1)
 # dev.off()
 
 ## rmse of autocorrelation and cross correlations
-metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
-metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
+# metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
+# metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
 ### rmse of cross correlations
 metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
 
