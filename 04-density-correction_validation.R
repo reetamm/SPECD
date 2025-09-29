@@ -2,7 +2,7 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-region = 'SW'
+region = 'SE'
 method = 'MLE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -19,11 +19,11 @@ head(coords)
 # coords$lon = coords$lon - 360
 table(grid.no)
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=10)
+vecchia.order = order_maxmin(coords,lonlat = F)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 loc = 1
 mnth = 1
-mnths = 5:8
+mnths = 10:12
 loc.vector <- 1:25
 
 for(mnth in mnths)

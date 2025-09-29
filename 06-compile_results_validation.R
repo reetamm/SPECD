@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -31,8 +31,8 @@ GeoLocations <- usmap_transform(coords)
 
 table(grid.no)
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = T)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=3)
+vecchia.order = order_maxmin(coords,lonlat = F)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 loc = 3
 mnth = 1
 mnths = 11:12
@@ -58,9 +58,9 @@ for(mnth in 1:12){
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
-        envname = paste0('fits/',region,'_validation_m3/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_validation_m3/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
