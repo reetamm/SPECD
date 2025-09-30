@@ -2,8 +2,9 @@ rm(list = ls())
 library(ggplot2)
 library(scales)
 library(lubridate)
+library(Metrics)
 load(file = 'data/simdata.RData')
-method = 'CCA'
+method = 'QM'
 pred.long <- read.csv('data/result_sim_competing.csv')
 coords = as.matrix(locs)
 head(coords)
@@ -38,7 +39,7 @@ for(mnth in 1:1){
         print(paste(mnth,loc))
         y1 <- c(Temp0[,loc],Temp1[,loc])
         y2 <- c(Prec0[,loc],Prec1[,loc])
-        y2 <- log(0.0001+y2)
+        # y2 <- log(0.0001+y2)
         n0 <- n1 <- nrow(Temp0)
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
@@ -55,12 +56,12 @@ for(mnth in 1:1){
         if(method=='CCA'){
             qf.y1.mle.ts <-pred.long$tmax_CCA[vecchia.order==loc]
             qf.y2.mle.ts <- pred.long$prcp_CCA[vecchia.order==loc]
-            qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
         }
         if(method=='QM'){
             qf.y1.mle.ts <- pred.long$tmax_QR[vecchia.order==loc]
             qf.y2.mle.ts <- pred.long$prcp_QR[vecchia.order==loc]
-            qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
         }
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
@@ -113,9 +114,9 @@ plot(d0,col=2,ylim=range(c(plotmin.y,plotmax.y)),
 lines(d1,col=1)
 lines(d2,col=1,lty=2)
 legend('topleft',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
-d0 <-density(cal.array2[,4]) # gcm
-d1 <-density(cal.array2[,6]) # obs 
-d2 <- density(cal.array2[,5]) # pred
+d0 <-density(log(0.0001 + cal.array2[,4])) # gcm
+d1 <-density(log(0.0001 + cal.array2[,6])) # obs 
+d2 <-density(log(0.0001 + cal.array2[,5]))
 plotmax.y = max(d0$y,d1$y,d2$y)
 plotmin.y = min(d0$y,d1$y,d2$y)
 plotmax.x = max(d0$x,d1$x,d2$x)
@@ -132,60 +133,12 @@ for(loc in 1:25){
     wasdist[loc,1] <- wasserstein1d(cal.array[,2,loc],cal.array[,3,loc])
     wasdist[loc,2] <- wasserstein1d(cal.array[,5,loc],cal.array[,6,loc])
 }
-summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
-metrics = data.frame(coords,wasdist,vecchia.order)
-# ggplot(metrics,aes(x=lon,y=lat,fill=X1)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X1,2)),col='white') + ggtitle(paste('SE','temp')) + theme_bw() +
-#     theme(legend.position = 'none') 
-# ggsave(filename = paste0('plots/','SE','_wassdist_temp_validation.png'))
-# ggplot(metrics,aes(x=lon,y=lat,fill=X2)) + geom_raster() + coord_equal() +
-#     geom_text(aes(label=round(X2,2)),col='white') + ggtitle(paste('SE','PRCP')) +
-#     theme(legend.position = 'none')
-# ggsave(filename = paste0('plots/','SE','_wassdist_prcp_validation.png'))
-
-mnth = rep(1:12,25)
-
-# pdf(paste0('plots/autocorr_',model.type,'_','SE','_validation.pdf'),width = 8,height = 4)
-# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-# 
-# lim_min = round(min(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-# lim_max = round(max(c(y1.cors.0,y1.cors.1,y1.cors.2),na.rm = T),5)
-# plot(y1.cors.0[-1],y1.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-#      main = paste('SE','TMAX'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-# points(y1.cors.2[-1],y1.cors.1[-1],pch=1,col=2,cex=0.75)
-# points(y1.cors.0[-1],y1.cors.1[-1],pch=20,cex=0.75,col=1)
-# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-# abline(0,1)
-# 
-# lim_min = round(min(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-# lim_max = round(max(c(y2.cors.0,y2.cors.1,y2.cors.2),na.rm = T),5)
-# plot(y2.cors.0[-1],y2.cors.1[-1],pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-#      main = paste('SE','PRCP'),xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max))
-# points(y2.cors.2[-1],y2.cors.1[-1],pch=1,col=2,cex=0.75)
-# points(y2.cors.0[-1],y2.cors.1[-1],pch=20,cex=0.75,col=1)
-# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(3,1),col=c(2,1))
-# abline(0,1)
-# par(mfrow=c(1,1))
-# dev.off()
-
-# pdf(paste0('plots/crosscorr_',model.type,'_','SE','_validation.pdf'),width = 5,height = 4)
-par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-lim_min = round(min(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
-lim_max = round(max(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
-plot(y1y2.cors.0,y1y2.cors.1,pch=20,xlab = 'Model',ylab = 'Observed',cex=0.75,col=1,
-     xlim = c(lim_min,lim_max),ylim = c(lim_min,lim_max),main='SE')
-points(y1y2.cors.2,y1y2.cors.1,pch=1,col=2,cex=0.75)
-points(y1y2.cors.0,y1y2.cors.1,pch=20,cex=0.75,col=1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-abline(0,1)
-# dev.off()
-
 ## rmse of autocorrelation and cross correlations
-metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
-metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
-### rmse of cross correlations
-metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
+# metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
+# metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
+## rmse of cross correlations
+metrics_all[9] = mae(y1y2.cors.0[-1], y1y2.cors.1[-1])
 
 
 q1 = 0.95
@@ -253,8 +206,8 @@ par(mfrow=c(1,1))
 # dev.off()
 
 # rmse of upper quantiles
-metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
-metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
+metrics_all[8] = mae(pred_summaries[,4],pred_summaries[,5]) # prcp
+metrics_all[4] = mae(pred_summaries[,7],pred_summaries[,8]) # tmax
 
 # 
 # coords = cbind(coords,vecchia.order)
@@ -297,8 +250,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # dev.off()
 
 # spatial correlations RMSE
-metrics_all[3] = sqrt(mean((correls[,2]-correls[,3])**2,na.rm = T))
-metrics_all[7] = sqrt(mean((correls[,5]-correls[,6])**2,na.rm = T))
+metrics_all[3] = mae(correls[,2], correls[,3])
+metrics_all[7] = mae(correls[,5],correls[,6])
 metrics_all
 round(metrics_all,4)
 
@@ -310,7 +263,7 @@ for(mnth in 1:1)
     for(loc in 1:25){
         count = count+1
         tmp <- cal.data[[mnth]][,4:6,loc]
-        tmp <- exp(tmp) - 0.0001
+        # tmp <- exp(tmp) - 0.0001
         propzero[count,] <- apply(tmp,2,function(x)mean(round(x,4)==0))        
     }
 
@@ -322,7 +275,7 @@ points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
 legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # dev.off()
 
-metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
+metrics_all[10] <- mae(propzero[,3],propzero[,2])
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
