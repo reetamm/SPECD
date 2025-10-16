@@ -31,8 +31,8 @@ GeoLocations <- usmap_transform(coords)
 
 table(grid.no)
 set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = F)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
+vecchia.order = order_maxmin(coords,lonlat = T)
+NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = T,m=10)
 loc = 3
 mnth = 1
 mnths = 11:12
@@ -58,11 +58,12 @@ for(mnth in 1:12){
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
 
-        envname = paste0('fits/',region,'_validation/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_m10/',method,'_temp_m',mnth,'_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_validation/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+        envname = paste0('fits/',region,'_validation_m10/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
+        
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
@@ -85,7 +86,8 @@ eachmonth = rep(NA,12)
 
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
-
+summary(cal.array2)
+apply(cal.array2[,4:6],2,function(x)mean(x==0))
 # pdf(paste0('plots/density_',region,'_validation.pdf'),width = 8, height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 d0 <-density(cal.array2[,1]) # gcm
