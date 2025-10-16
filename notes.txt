@@ -1,0 +1,13 @@
+distribution shift for:
+tails
+proportion of zeros
+cross correlations
+
+note that SW has a lot more terrain than SE
+
+make sure everything is with 10 neighbors
+
+simulation study settings:
+spatial+cross correlations
+only cross correlation
+only marginals
