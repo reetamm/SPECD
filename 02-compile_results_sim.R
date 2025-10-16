@@ -35,9 +35,9 @@ for(mnth in 1:1){
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
         
-        envname = paste0('fits/sim_SPCDE/fits_temp_l',loc,'.RDS')
+        envname = paste0('fits/sim_marg/fits_temp_l',loc,'.RDS')
         qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/sim_SPCDE/fits_prcp_l',loc,'.RDS')
+        envname = paste0('fits/sim_marg/fits_prcp_l',loc,'.RDS')
         qf.y2.mle.ts <- readRDS(envname)
         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
         
@@ -56,8 +56,8 @@ for(mnth in 1:1){
 }
 
 save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-     file = paste0('fits/summary_sim_SPCDE.RData'))
-load(paste0('fits/summary_sim_SPCDE.RData'))
+     file = paste0('results/summary_sim_cross.RData'))
+load(paste0('results/summary_sim_cross.RData'))
 metrics_all <- rep(NA,10)
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
