@@ -24,41 +24,42 @@ y1y2.cors.1 = NA
 y1y2.cors.2 = NA
 daysinmonth = 30
 
-cal.data = vector('list',1)
-for(mnth in 1:1){
-    cal.array = array(dim = c(daysinmonth[mnth]*50,6,25))
-    for(loc in 1:25){
-        y1 <- c(Temp0[,loc],Temp1[,loc])
-        y2 <- c(Prec0[,loc],Prec1[,loc])
-        # y2 <- log(0.0001+y2)
-        n0 <- n1 <- nrow(Temp0)
-        n = n0 + n1
-        y0 <- rep(1:0,each=n0)
-        
-        envname = paste0('fits/sim_marg/fits_temp_l',loc,'.RDS')
-        qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/sim_marg/fits_prcp_l',loc,'.RDS')
-        qf.y2.mle.ts <- readRDS(envname)
-        qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
-        
-        y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
-        y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
-        y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
-        
-        cal.array[,1,loc] = y1[y0==0]           #model
-        cal.array[,2,loc] = qf.y1.mle.ts[y0==0] #calibrated
-        cal.array[,3,loc] = y1[y0==1]           #obs
-        cal.array[,4,loc] = y2[y0==0]           #model
-        cal.array[,5,loc] = qf.y2.mle.ts[y0==0] #calibrated
-        cal.array[,6,loc] = y2[y0==1]           #obs
-    }
-    cal.data[[mnth]] = cal.array
-}
-
-save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-     file = paste0('results/summary_sim_cross.RData'))
-load(paste0('results/summary_sim_cross.RData'))
+# cal.data = vector('list',1)
+# for(mnth in 1:1){
+#     cal.array = array(dim = c(daysinmonth[mnth]*50,6,25))
+#     for(loc in 1:25){
+#         y1 <- c(Temp0[,loc],Temp1[,loc])
+#         y2 <- c(Prec0[,loc],Prec1[,loc])
+#         # y2 <- log(0.0001+y2)
+#         n0 <- n1 <- nrow(Temp0)
+#         n = n0 + n1
+#         y0 <- rep(1:0,each=n0)
+#         
+#         envname = paste0('fits/sim_marg/fits_temp_l',loc,'.RDS')
+#         qf.y1.mle.ts <- readRDS(envname)
+#         envname = paste0('fits/sim_marg/fits_prcp_l',loc,'.RDS')
+#         qf.y2.mle.ts <- readRDS(envname)
+#         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
+#         
+#         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
+#         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
+#         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
+#         
+#         cal.array[,1,loc] = y1[y0==0]           #model
+#         cal.array[,2,loc] = qf.y1.mle.ts[y0==0] #calibrated
+#         cal.array[,3,loc] = y1[y0==1]           #obs
+#         cal.array[,4,loc] = y2[y0==0]           #model
+#         cal.array[,5,loc] = qf.y2.mle.ts[y0==0] #calibrated
+#         cal.array[,6,loc] = y2[y0==1]           #obs
+#     }
+#     cal.data[[mnth]] = cal.array
+# }
+# 
+# save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
+#      file = paste0('results/summary_sim_cross.RData'))
+load(paste0('results/summary_sim_spcde.RData'))
 metrics_all <- rep(NA,10)
+metrics_se <- rep(NA,10)
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 summary(cal.array2)
@@ -98,6 +99,7 @@ for(loc in 1:25){
 }
 summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
+metrics_se[c(1,5)] = apply(wasdist,2,sd)
 
 # pdf(paste0('plots/crosscorr_',model.type,'_',region,'_validation.pdf'),width = 5,height = 4)
 par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
@@ -116,6 +118,7 @@ abline(0,1)
 # metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
 ### rmse of cross correlations
 metrics_all[9] = mae(y1y2.cors.0[-1],y1y2.cors.1[-1])
+metrics_se[9] = sd(y1y2.cors.0[-1]-y1y2.cors.1[-1])
 
 
 q1 = 0.95
@@ -185,6 +188,8 @@ par(mfrow=c(1,1))
 # rmse of upper quantiles
 metrics_all[8] = mae(pred_summaries[,4],pred_summaries[,5]) # prcp
 metrics_all[4] = mae(pred_summaries[,7],pred_summaries[,8]) # tmax
+metrics_se[8] = sd(pred_summaries[,4]-pred_summaries[,5]) # prcp
+metrics_se[4] = sd(pred_summaries[,7]-pred_summaries[,8]) # tmax
 
 correls = matrix(NA,300,8)
 count = 0
@@ -224,6 +229,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # spatial correlations RMSE
 metrics_all[3] = mae(correls[,2],correls[,3])
 metrics_all[7] = mae(correls[,5],correls[,6])
+metrics_se[3] = sd(correls[,2]-correls[,3])
+metrics_se[7] = sd(correls[,5]-correls[,6])
 metrics_all
 round(metrics_all,4)
 
@@ -248,7 +255,10 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # dev.off()
 
 metrics_all[10] <- mae(propzero[,3],propzero[,2])
+metrics_se[10] <- sd(propzero[,3]-propzero[,2])
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
+round(metrics_se[c(1,4,2,3,5,8,10,6,7,9)],4)
+
 

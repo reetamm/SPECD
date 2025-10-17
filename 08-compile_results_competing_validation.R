@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 method = 'CCA'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -91,10 +91,11 @@ for(mnth in 1:12){
     cal.data[[mnth]] = cal.array
 }
 
-#  save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-#            file = paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
-# load(paste0('summary_',method,'_',model.type,'_',region,'_space_lonlat_SPQR_validation.RData'))
+save(y1y2.cors.0,y1y2.cors.1,cal.data,
+           file = paste0('results/summary_',region,'_',method,'_validation.RData'))
+load(paste0('results/summary_',region,'_',method,'_validation.RData'))
 metrics_all <- rep(NA,10)
+metrics_se <- rep(NA,10)
 eachmonth = rep(NA,12)
 
 cal.array = do.call(abind::abind,c(cal.data,along=1))
@@ -136,6 +137,7 @@ for(loc in 1:25){
 }
 summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
+metrics_se[c(1,5)] = apply(wasdist,2,sd)
 metrics = data.frame(coords,wasdist,vecchia.order)
 
 mnth = rep(1:12,25)
@@ -154,6 +156,7 @@ abline(0,1)
 ### rmse of cross correlations
 # metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
 metrics_all[9] = mean(abs((y1y2.cors.0[-1] - y1y2.cors.1[-1])))
+metrics_se[9] = sd((y1y2.cors.0[-1] - y1y2.cors.1[-1]))
 
 
 q1 = 0.95
@@ -224,6 +227,8 @@ par(mfrow=c(1,1))
 # metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
 metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
 metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
+metrics_se[8] = sd((pred_summaries[,4]-pred_summaries[,5])) # prcp
+metrics_se[4] = sd((pred_summaries[,7]-pred_summaries[,8])) # tmax
 
 correls = matrix(NA,300*12,8)
 count = 0
@@ -266,6 +271,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # metrics_all[7] = sqrt(mean((correls[,5]-correls[,6])**2,na.rm = T))
 metrics_all[3] = mean(abs((correls[,2]-correls[,3])))
 metrics_all[7] = mean(abs((correls[,5]-correls[,6])))
+metrics_se[3] = sd((correls[,2]-correls[,3]))
+metrics_se[7] = sd((correls[,5]-correls[,6]))
 metrics_all
 round(metrics_all,4)
 
@@ -291,10 +298,12 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 
 # metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
+metrics_se[10] <- sd((propzero[,3]-propzero[,2]))
 
 names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
                         'wasdist','autocorr','spatcorr','quantile',
                         'crosscorr','propzero')
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
+round(metrics_se[c(1,4,2,3,5,8,10,6,7,9)],4)
 

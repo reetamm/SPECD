@@ -4,7 +4,7 @@ library(scales)
 library(lubridate)
 library(Metrics)
 load(file = 'data/simdata.RData')
-method = 'QM'
+method = 'CCA'
 pred.long <- read.csv('data/result_sim_competing.csv')
 coords = as.matrix(locs)
 head(coords)
@@ -82,6 +82,7 @@ for(mnth in 1:1){
 #      file = paste0('summary_',method,'_',model.type,'_','SE','_space_lonlat_SPQR_validation.RData'))
 # load(paste0('summary_',method,'_',model.type,'_','SE','_space_lonlat_SPQR_validation.RData'))
 metrics_all <- rep(NA,10)
+metrics_se <- rep(NA,10)
 # eachmonth = rep(NA,12)
 # for(i in 1:12){
 #     eachmonth[i] = dim(cal.data[[i]])[1]
@@ -134,11 +135,13 @@ for(loc in 1:25){
     wasdist[loc,2] <- wasserstein1d(cal.array[,5,loc],cal.array[,6,loc])
 }
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
+metrics_se[c(1,5)] = apply(wasdist,2,sd)
 ## rmse of autocorrelation and cross correlations
 # metrics_all[2] = sqrt(mean((y1.cors.0[-1] - y1.cors.1[-1])**2,na.rm = T))
 # metrics_all[6] = sqrt(mean((y2.cors.0[-1] - y2.cors.1[-1])**2,na.rm = T))
 ## rmse of cross correlations
 metrics_all[9] = mae(y1y2.cors.0[-1], y1y2.cors.1[-1])
+metrics_se[9] = sd(y1y2.cors.0[-1]- y1y2.cors.1[-1])
 
 
 q1 = 0.95
@@ -208,6 +211,8 @@ par(mfrow=c(1,1))
 # rmse of upper quantiles
 metrics_all[8] = mae(pred_summaries[,4],pred_summaries[,5]) # prcp
 metrics_all[4] = mae(pred_summaries[,7],pred_summaries[,8]) # tmax
+metrics_se[8] = sd(pred_summaries[,4]-pred_summaries[,5]) # prcp
+metrics_se[4] = sd(pred_summaries[,7]-pred_summaries[,8]) # tmax
 
 # 
 # coords = cbind(coords,vecchia.order)
@@ -252,6 +257,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # spatial correlations RMSE
 metrics_all[3] = mae(correls[,2], correls[,3])
 metrics_all[7] = mae(correls[,5],correls[,6])
+metrics_se[3] = sd(correls[,2]- correls[,3])
+metrics_se[7] = sd(correls[,5]-correls[,6])
 metrics_all
 round(metrics_all,4)
 
@@ -276,7 +283,9 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # dev.off()
 
 metrics_all[10] <- mae(propzero[,3],propzero[,2])
+metrics_se[10] <- sd(propzero[,3]-propzero[,2])
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
+round(metrics_se[c(1,4,2,3,5,8,10,6,7,9)],4)
 

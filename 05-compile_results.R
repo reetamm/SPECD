@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SW'
+region = 'SE'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -42,46 +42,47 @@ y1y2.cors.1 = NA
 y1y2.cors.2 = NA
 daysinmonth = c(31,28,31,30,31,30,31,31,30,31,30,31)
 
-cal.data = vector('list',12)
-for(mnth in 1:12){
-    cal.array = array(dim = c(daysinmonth[mnth]*64,6,25))
-    for(loc in 1:25){
-        cur.loc <- vecchia.order[loc]
-        print(paste(mnth,loc))
-        y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth],
-                gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth])
-        y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth],
-                gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
-        # y2 <- log(0.0001+y2)
-        n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
-        n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth])
-        n = n0 + n1
-        y0 <- rep(1:0,each=n0)
-        
-        envname = paste0('fits/',region,'_m',m,'/',method,'_temp_m',mnth,'_l',loc,'.RDS')
-        qf.y1.mle.ts <- readRDS(envname)
-        envname = paste0('fits/',region,'_m',m,'/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
-        qf.y2.mle.ts <- readRDS(envname)
-        qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
-
-        y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
-        y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
-        y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
-        
-        cal.array[,1,loc] = y1[y0==0]
-        cal.array[,3,loc] = y1[y0==1]
-        cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
-        cal.array[,4,loc] = y2[y0==0]
-        cal.array[,6,loc] = y2[y0==1]
-        cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
-    }
-    cal.data[[mnth]] = cal.array
-}
-
-save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
-     file = paste0('fits/summary_',method,'_',region,'_m',m,'_SPQR.RData'))
-load(paste0('fits/summary_',method,'_',region,'_m',m,'_SPQR.RData'))
+# cal.data = vector('list',12)
+# for(mnth in 1:12){
+#     cal.array = array(dim = c(daysinmonth[mnth]*64,6,25))
+#     for(loc in 1:25){
+#         cur.loc <- vecchia.order[loc]
+#         print(paste(mnth,loc))
+#         y1 <- c(obs.long$tmax[loc.vector==cur.loc & gcm.months==mnth],
+#                 gcm.long$tmax[loc.vector==cur.loc & gcm.months==mnth])
+#         y2 <- c(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth],
+#                 gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
+#         # y2 <- log(0.0001+y2)
+#         n0 = length(gcm.long$pr[loc.vector==cur.loc & gcm.months==mnth])
+#         n1 = length(obs.long$pr[loc.vector==cur.loc & gcm.months==mnth])
+#         n = n0 + n1
+#         y0 <- rep(1:0,each=n0)
+#         
+#         envname = paste0('fits/',region,'_m',m,'/',method,'_temp_m',mnth,'_l',loc,'.RDS')
+#         qf.y1.mle.ts <- readRDS(envname)
+#         envname = paste0('fits/',region,'_m',m,'/',method,'_prcp_m',mnth,'_l',loc,'.RDS')
+#         qf.y2.mle.ts <- readRDS(envname)
+#         qf.y2.mle.ts <- exp(qf.y2.mle.ts) - 0.0001
+# 
+#         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
+#         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
+#         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
+#         
+#         cal.array[,1,loc] = y1[y0==0]
+#         cal.array[,3,loc] = y1[y0==1]
+#         cal.array[,2,loc] = qf.y1.mle.ts[y0==0]
+#         cal.array[,4,loc] = y2[y0==0]
+#         cal.array[,6,loc] = y2[y0==1]
+#         cal.array[,5,loc] = qf.y2.mle.ts[y0==0]
+#     }
+#     cal.data[[mnth]] = cal.array
+# }
+# 
+# save(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2,cal.data,
+#            file = paste0('results/summary_',method,'_',region,'_m',m,'_SPQR.RData'))
+load(paste0('results/summary_',method,'_',region,'_m',m,'_SPQR.RData'))
 metrics_all <- rep(NA,10)
+metrics_se <- rep(NA,10)
 eachmonth = rep(NA,12)
 
 cal.array = do.call(abind::abind,c(cal.data,along=1))
@@ -123,6 +124,7 @@ for(loc in 1:25){
 }
 summary(wasdist)
 metrics_all[c(1,5)] = apply(wasdist,2,mean)
+metrics_se[c(1,5)] = apply(wasdist,2,sd)
 metrics = data.frame(coords,wasdist,vecchia.order)
 
 mnth = rep(1:12,25)
@@ -141,6 +143,7 @@ abline(0,1)
 ### rmse of cross correlations
 # metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
 metrics_all[9] = mean(abs((y1y2.cors.0[-1] - y1y2.cors.1[-1])))
+metrics_se[9] = sd((y1y2.cors.0[-1] - y1y2.cors.1[-1]))
 
 
 q1 = 0.95
@@ -210,6 +213,8 @@ par(mfrow=c(1,1))
 # metrics_all[4] = sqrt(mean((pred_summaries[,7]-pred_summaries[,8])**2,na.rm = T)) # tmax
 metrics_all[8] = mean(abs((pred_summaries[,4]-pred_summaries[,5]))) # prcp
 metrics_all[4] = mean(abs((pred_summaries[,7]-pred_summaries[,8]))) # tmax
+metrics_se[8] = sd((pred_summaries[,4]-pred_summaries[,5])) # prcp
+metrics_se[4] = sd((pred_summaries[,7]-pred_summaries[,8])) # tmax
 
 correls = matrix(NA,300*12,8)
 count = 0
@@ -253,6 +258,8 @@ legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # metrics_all[7] = sqrt(mean((correls[,5]-correls[,4])**2,na.rm = T))
 metrics_all[3] = mean(abs((correls[,2]-correls[,3])))
 metrics_all[7] = mean(abs((correls[,5]-correls[,6])))
+metrics_se[3] = sd((correls[,2]-correls[,3]))
+metrics_se[7] = sd((correls[,5]-correls[,6]))
 metrics_all
 round(metrics_all,4)
 
@@ -276,6 +283,7 @@ legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 
 # metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))
+metrics_se[10] <- sd((propzero[,3]-propzero[,2]))
 
 names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
                         'wasdist','autocorr','spatcorr','quantile',
@@ -283,4 +291,5 @@ names(metrics_all) <- c('wasdist','autocorr','spatcorr','quantile',
 
 metrics_all
 round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
+round(metrics_se[c(1,4,2,3,5,8,10,6,7,9)],4)
 
