@@ -2,7 +2,16 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-load(file = 'data/simdata.RData')
+load(file = 'data/simdata/0.RData')
+Temp0_train <- Temp0[1:1500,]
+Temp1_train <- Temp1[1:1500,]
+Prec0_train <- Prec0[1:1500,]
+Prec1_train <- Prec1[1:1500,]
+
+Temp0_test <- Temp0[1501:1920,]
+Temp1_test <- Temp1[1501:1920,]
+Prec0_test <- Prec0[1501:1920,]
+Prec1_test <- Prec1[1501:1920,]
 
 coords = as.matrix(locs)
 head(coords)
@@ -11,10 +20,16 @@ set.seed(303)
 vecchia.order = order_maxmin(coords,lonlat = F)
 NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
 
-Temp0 <- Temp0[,vecchia.order]
-Temp1 <- Temp1[,vecchia.order]
-Prec0 <- Prec0[,vecchia.order]
-Prec1 <- Prec1[,vecchia.order]
+Temp0_train <- Temp0_train[,vecchia.order]
+Temp1_train <- Temp1_train[,vecchia.order]
+Prec0_train <- Prec0_train[,vecchia.order]
+Prec1_train <- Prec1_train[,vecchia.order]
+
+Temp0_test <- Temp0_test[,vecchia.order]
+Temp1_test <- Temp1_test[,vecchia.order]
+Prec0_test <- Prec0_test[,vecchia.order]
+Prec1_test <- Prec1_test[,vecchia.order]
+
 loc = 1
 
 for(loc in 1:25){
