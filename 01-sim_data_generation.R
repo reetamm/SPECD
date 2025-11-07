@@ -2,6 +2,7 @@ rm(list=ls())
 library(fields)
 library(sn)
 library(scales)
+sim=0
 for(sim in 0:100){
     set.seed(sim)
     m        <- 25          # Number of spatial locations
@@ -83,25 +84,14 @@ for(sim in 0:100){
     #thresholding to 0
     Prec0[Prec0<0] = 0 
     Prec1[Prec1<0] = 0
-    savename <- paste0('data/simdata/',sim,'.RData')
-    save(locs,Temp0,Temp1,Prec0,Prec1,file = savename)
+    # savename <- paste0('data/simdata/',sim,'.RData')
+    # save(locs,Temp0,Temp1,Prec0,Prec1,file = savename)
+    if(sim==0)
+    df <- data.frame(year = rep(1:64, each=30), prcp_obs = c(Prec0), prcp_mod = c(Prec1),
+                     tmax_obs = c(Temp0), tmax_mod = c(Temp1),
+                     lat = rep(locs[,1],each = 30*64), lon = rep(locs[,2],each = 30*64))
+    if(sim>0)
+        df <- data.frame(prcp_obs = c(Prec0), prcp_mod = c(Prec1),
+                         tmax_obs = c(Temp0), tmax_mod = c(Temp1))
+    write.csv(df,file = paste0('data/simdata_csv/',sim,'.csv'))
 }
-
-#log transform like we normally do
-Prec1 = log(Prec1 + 0.0001)
-Prec0 = log(Prec0 + 0.0001)
-
-crosscors <- matrix(NA,nrow = 25,ncol=2)
-for(i in 1:25){
-    crosscors[i,1] <- cor(Temp0[,i],Prec0[,i])
-    crosscors[i,2] <- cor(Temp1[,i],Prec1[,i])
-}
-
-plot(crosscors,xlim=c(-0.9,0),ylim=c(-0.9,-0))
-abline(0,1)
-
-
-
-plot(density(Prec0), ylim=c(0,0.5),xlim = c(-15,6)) #obs prcp (more 0s)
-lines(density(Prec1)) #model prcp (fewer 0s)
-
