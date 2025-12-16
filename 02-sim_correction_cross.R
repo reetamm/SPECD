@@ -2,31 +2,55 @@ rm(list = ls())
 library(GpGp)
 library(SPQR)
 library(lubridate)
-load(file = 'data/simdata.RData')
+library(foreach)
+library(doParallel)
 
-coords = as.matrix(locs)
-head(coords)
-
-set.seed(303)
-vecchia.order = order_maxmin(coords,lonlat = F)
-NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
-
-Temp0 <- Temp0[,vecchia.order]
-Temp1 <- Temp1[,vecchia.order]
-Prec0 <- Prec0[,vecchia.order]
-Prec1 <- Prec1[,vecchia.order]
 loc = 1
-
+dataset=1
+cl          <- makeCluster(10,outfile = 'Log.txt')
+registerDoParallel(cl)
+output_app  <- foreach(dataset = 1:100,.packages = c('SPQR','GpGp')) %dopar% {
+    dir <- file.path('fits/sim_cross',dataset) 
+    if (!dir.exists(dir)) dir.create(dir)
+    
+    filename <- paste0('data/simdata/',dataset,'.RData')
+    load(file = filename)
+    
+    coords = as.matrix(locs)
+    head(coords)
+    
+    set.seed(303)
+    vecchia.order = order_maxmin(coords,lonlat = F)
+    NNarray <- find_ordered_nn(coords[vecchia.order,],lonlat = F,m=5)
+    
+    Temp0 <- Temp0[,vecchia.order]
+    Temp1 <- Temp1[,vecchia.order]
+    Prec0 <- Prec0[,vecchia.order]
+    Prec1 <- Prec1[,vecchia.order]
+    train_indices <- c(1:1500,1921:3420)
+    test_indices <- c(1501:1920,3421:3840)
+    
 for(loc in 1:25){
-    pdfname     <- paste0('plots/sim/fits_l',loc,'.pdf')
-    predname1   <- paste0( 'fits/sim_cross/fits_temp_l',loc,'.RDS')
-    predname2   <- paste0( 'fits/sim_cross/fits_prcp_l',loc,'.RDS')
+    # pdfname     <- paste0('plots/sim/fits_l',loc,'.pdf')
+    predname1   <- paste0( 'fits/sim_cross/',dataset,'/fits_temp_l',loc,'.RDS')
+    predname2   <- paste0( 'fits/sim_cross/',dataset,'/fits_prcp_l',loc,'.RDS')
     
     # current.loc = vecchia.order[loc]
     
     y1 <- c(Temp0[,loc],Temp1[,loc])
     y2 <- c(Prec0[,loc],Prec1[,loc])
     y2 <- log(0.0001+y2)
+    
+    max_y1 <- max(y1[train_indices])
+    max_y2 <- max(y2[train_indices])
+    min_y1 <- min(y1[train_indices])
+    min_y2 <- min(y2[train_indices])
+    y1[y1>max_y1] = max_y1
+    y1[y1<min_y1] = min_y1
+    y2[y2>max_y2] = max_y2
+    y2[y2<min_y2] = min_y2
+    
+    
     n0 <- n1 <- nrow(Temp0)
     n = n0 + n1
     y0 <- rep(1:0,each=n0)
@@ -49,8 +73,8 @@ for(loc in 1:25){
     
     # head(X1)
 
-    control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',loc,'pt',sep='.'))
-    fit.y1.mle <- SPQR(X = X1, Y = y1, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
+    control <- list(epochs = 100, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.temp',loc,dataset,'pt',sep='.'))
+    fit.y1.mle <- SPQR(X = X1[train_indices,], Y = y1[train_indices], method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
                           n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc)
 
     # plotGOF(fit.y1.mle)
@@ -82,8 +106,8 @@ for(loc in 1:25){
     nx2 = ncol(X2)
     # head(X2)
     # head(y2)
-    control <- list(iter = 300, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',loc,'pt',sep='.'))
-    fit.y2.mle <- SPQR(X = X2, Y = y2, method = "MLE", control = control, normalize = T, verbose = T,use.GPU=F,
+    control <- list(epochs = 100, batch.size = 100, lr = 0.001, save.name = paste('SPQR.model.prcp',loc,dataset,'pt',sep='.'))
+    fit.y2.mle <- SPQR(X = X2[train_indices,], Y = y2[train_indices], method = "MLE", control = control, normalize = T, verbose = T,use.GPU=T,
                           n.hidden = c(30,20), activation = 'relu',n.knots = 20,seed = loc)
     # plotGOF(fit.y2.mle)
     cdf.y2.mle = rep(NA,n)
@@ -158,54 +182,55 @@ for(loc in 1:25){
     # }
     saveRDS(qf.y2.mle,file = predname2)
     
-    pdf(file = pdfname,width = 6,height = 6)
-    par(mfrow=c(2,2))
+    # pdf(file = pdfname,width = 6,height = 6)
+    # par(mfrow=c(2,2))
+    # # 
+    # plot(y1,qf.y1.mle,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
+    # abline(0,1)
     # 
-    plot(y1,qf.y1.mle,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
-    abline(0,1)
-    
-    summary(qf.y1.mle[y0==0])
-    summary(qf.y1.mle[y0==1])
-    
-    summary(y1[y0==1])
-    summary(y1[y0==0])
-    
-    d0 <-density(y1[y0==0]) 
-    d1 <-density(y1[y0==1]) 
-    d2 <- density(qf.y1.mle[y0==0])
-    plotmax.y = max(d0$y,d1$y,d2$y)
-    plotmin.y = min(d0$y,d1$y,d2$y)
-    plotmax.x = max(d0$x,d1$x,d2$x)
-    plotmin.x = min(d0$x,d1$x,d2$x)
-    plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
-         xlim=range(c(plotmin.x,plotmax.x)),ylab="Y1",main="Y1")
-    lines(d1,col=2)
-    lines(d2,col=3,lty=2)
-
-    
-    plot(y2,qf.y2.mle,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
-    abline(0,1)
-    
-    
-    summary(qf.y2.mle[y0==0])
-    summary(qf.y2.mle[y0==1])
-    
-    summary(y2[y0==1])
-    summary(y2[y0==0])
-    
-    d0 <-density(y2[y0==0]) 
-    d1 <-density(y2[y0==1]) 
-    d2 <- density(qf.y2.mle[y0==0])
-    plotmax.y = max(d0$y,d1$y,d2$y)
-    plotmin.y = min(d0$y,d1$y,d2$y)
-    plotmax.x = max(d0$x,d1$x,d2$x)
-    plotmin.x = min(d0$x,d1$x,d2$x)
-    plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
-         xlim=range(c(plotmin.x,plotmax.x)),ylab="Y2",main="Y2")
-    lines(d1,col=2)
-    lines(d2,col=2,lty=2)
-    
-    dev.off()
-    par(mfrow=c(1,1))
+    # summary(qf.y1.mle[y0==0])
+    # summary(qf.y1.mle[y0==1])
+    # 
+    # summary(y1[y0==1])
+    # summary(y1[y0==0])
+    # 
+    # d0 <-density(y1[y0==0]) 
+    # d1 <-density(y1[y0==1]) 
+    # d2 <- density(qf.y1.mle[y0==0])
+    # plotmax.y = max(d0$y,d1$y,d2$y)
+    # plotmin.y = min(d0$y,d1$y,d2$y)
+    # plotmax.x = max(d0$x,d1$x,d2$x)
+    # plotmin.x = min(d0$x,d1$x,d2$x)
+    # plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
+    #      xlim=range(c(plotmin.x,plotmax.x)),ylab="Y1",main="Y1")
+    # lines(d1,col=2)
+    # lines(d2,col=3,lty=2)
+    # 
+    # 
+    # plot(y2,qf.y2.mle,col=y0+1, main = 'MLE-TS',pch=20,cex=0.2)
+    # abline(0,1)
+    # 
+    # 
+    # summary(qf.y2.mle[y0==0])
+    # summary(qf.y2.mle[y0==1])
+    # 
+    # summary(y2[y0==1])
+    # summary(y2[y0==0])
+    # 
+    # d0 <-density(y2[y0==0]) 
+    # d1 <-density(y2[y0==1]) 
+    # d2 <- density(qf.y2.mle[y0==0])
+    # plotmax.y = max(d0$y,d1$y,d2$y)
+    # plotmin.y = min(d0$y,d1$y,d2$y)
+    # plotmax.x = max(d0$x,d1$x,d2$x)
+    # plotmin.x = min(d0$x,d1$x,d2$x)
+    # plot(d0,col=1,ylim=range(c(plotmin.y,plotmax.y)),
+    #      xlim=range(c(plotmin.x,plotmax.x)),ylab="Y2",main="Y2")
+    # lines(d1,col=2)
+    # lines(d2,col=2,lty=2)
+    # 
+    # dev.off()
+    # par(mfrow=c(1,1))
 }
-
+}
+stopCluster(cl)
