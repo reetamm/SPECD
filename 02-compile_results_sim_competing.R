@@ -3,9 +3,22 @@ library(ggplot2)
 library(scales)
 library(lubridate)
 library(Metrics)
-load(file = 'data/simdata.RData')
-method = 'CCA'
-pred.long <- read.csv('data/result_sim_competing.csv')
+dataset=8
+est_matrix <- array(NA,dim = c(8,2,100))
+se_matrix <- array(NA,dim = c(8,2,100))
+
+
+
+train=T
+for(type in 1:2)
+for(dataset in 1:100){
+    method <- c('QM','CCE')[type]
+    sim = c('sim_marg','sim_cross','sim_SPCDE')[method]
+    dir <- file.path('fits/',method,dataset) 
+    filename <- paste0('data/simdata/',dataset,'.RData')
+    load(file = filename)
+    pred.name <- paste0('fits/sim_competing/bias_corrected_file_',sprintf("%03d", dataset),'.csv')
+pred.long <- read.csv(pred.name)
 coords = as.matrix(locs)
 head(coords)
 
@@ -17,6 +30,9 @@ Temp0 <- Temp0[,vecchia.order]
 Temp1 <- Temp1[,vecchia.order]
 Prec0 <- Prec0[,vecchia.order]
 Prec1 <- Prec1[,vecchia.order]
+
+train_indices <- c(1:1500,1921:3420)
+test_indices <- c(1501:1920,3421:3840)
 
 y1.cors.0 = NA
 y2.cors.0 = NA
@@ -33,14 +49,23 @@ mnth = 1
 loc=1
 cal.data = vector('list',1)
 for(mnth in 1:1){
+    if(train)
     cal.array = array(dim = c(daysinmonth[mnth]*50,6,25))
+    if(!train)
+        cal.array = array(dim = c(daysinmonth[mnth]*14,6,25))
     for(loc in 1:25){
         cur.loc <- vecchia.order[loc]
-        print(paste(mnth,loc))
-        y1 <- c(Temp0[,loc],Temp1[,loc])
-        y2 <- c(Prec0[,loc],Prec1[,loc])
+        # print(paste(mnth,loc))
+       if(train){
+           y1 <- c(Temp0[,loc],Temp1[,loc])[train_indices]
+           y2 <- c(Prec0[,loc],Prec1[,loc])[train_indices]
+       }
+        if(!train){
+            y1 <- c(Temp0[,loc],Temp1[,loc])[test_indices]
+            y2 <- c(Prec0[,loc],Prec1[,loc])[test_indices]
+        }
         # y2 <- log(0.0001+y2)
-        n0 <- n1 <- nrow(Temp0)
+        n0 <- n1 <- length(y1)/2
         n = n0 + n1
         y0 <- rep(1:0,each=n0)
         
@@ -53,26 +78,42 @@ for(mnth in 1:1){
         x20 = y20[c(n1,1:(n1-1))]
         x21 = y21[c(n1,1:(n1-1))]
         
-        if(method=='CCA'){
-            qf.y1.mle.ts <-pred.long$tmax_CCA[vecchia.order==loc]
-            qf.y2.mle.ts <- pred.long$prcp_CCA[vecchia.order==loc]
-            # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+        if(train){
+            if(method=='CCA'){
+                qf.y1.mle.ts <-(pred.long$tmax_CCA[vecchia.order==loc])[train_indices]
+                qf.y2.mle.ts <- (pred.long$prcp_CCA[vecchia.order==loc])[train_indices]
+                # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            }
+            if(method=='QM'){
+                qf.y1.mle.ts <- (pred.long$tmax_QR[vecchia.order==loc])[train_indices]
+                qf.y2.mle.ts <- (pred.long$prcp_QR[vecchia.order==loc])[train_indices]
+                # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            }
         }
-        if(method=='QM'){
-            qf.y1.mle.ts <- pred.long$tmax_QR[vecchia.order==loc]
-            qf.y2.mle.ts <- pred.long$prcp_QR[vecchia.order==loc]
-            # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+        if(!train){
+            if(method=='CCA'){
+                qf.y1.mle.ts <-(pred.long$tmax_CCA[vecchia.order==loc])[test_indices]
+                qf.y2.mle.ts <- (pred.long$prcp_CCA[vecchia.order==loc])[test_indices]
+                # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            }
+            if(method=='QM'){
+                qf.y1.mle.ts <- (pred.long$tmax_QR[vecchia.order==loc])[test_indices]
+                qf.y2.mle.ts <- (pred.long$prcp_QR[vecchia.order==loc])[test_indices]
+                # qf.y2.mle.ts <- log(qf.y2.mle.ts + 0.0001)
+            }
         }
+        
+        
         y1y2.cors.1 = c(y1y2.cors.1,cor(y1[y0==1],y2[y0==1]))
         y1y2.cors.2 = c(y1y2.cors.2,cor(y1[y0==0],y2[y0==0]))
         y1y2.cors.0 = c(y1y2.cors.0,cor(qf.y1.mle.ts[y0==1],qf.y2.mle.ts[y0==1]))
         
         cal.array[,1,loc] = y1[y0==0]
         cal.array[,3,loc] = y1[y0==1]
-        cal.array[,2,loc] = qf.y1.mle.ts
+        cal.array[,2,loc] = qf.y1.mle.ts[y0==1]
         cal.array[,4,loc] = y2[y0==0]
         cal.array[,6,loc] = y2[y0==1]
-        cal.array[,5,loc] = qf.y2.mle.ts
+        cal.array[,5,loc] = qf.y2.mle.ts[y0==1]
     }
     cal.data[[mnth]] = cal.array
 }
@@ -102,32 +143,32 @@ cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 summary(cal.array2)
 # pdf(paste0('plots/density_','SE','_validation.pdf'),width = 8, height = 4)
-par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-d0 <-density(cal.array2[,1]) # gcm
-d1 <-density(cal.array2[,3]) # obs 
-d2 <- density(cal.array2[,2]) # pred
-plotmax.y = max(d0$y,d1$y,d2$y)
-plotmin.y = min(d0$y,d1$y,d2$y)
-plotmax.x = max(d0$x,d1$x,d2$x)
-plotmin.x = min(d0$x,d1$x,d2$x)
-plot(d0,col=2,ylim=range(c(plotmin.y,plotmax.y)),
-     xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab='TMAX')
-lines(d1,col=1)
-lines(d2,col=1,lty=2)
-legend('topleft',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
-d0 <-density(log(0.0001 + cal.array2[,4])) # gcm
-d1 <-density(log(0.0001 + cal.array2[,6])) # obs 
-d2 <-density(log(0.0001 + cal.array2[,5]))
-plotmax.y = max(d0$y,d1$y,d2$y)
-plotmin.y = min(d0$y,d1$y,d2$y)
-plotmax.x = max(d0$x,d1$x,d2$x)
-plotmin.x = min(d0$x,d1$x,d2$x)
-plot(d0,col=2,ylim=range(c(plotmin.y,plotmax.y)),
-     xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab = 'PRCP')
-lines(d1,col=1)
-lines(d2,col=1,lty=2)
-legend('topright',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
-par(mfrow=c(1,1))
+# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+# d0 <-density(cal.array2[,1]) # gcm
+# d1 <-density(cal.array2[,3]) # obs 
+# d2 <- density(cal.array2[,2]) # pred
+# plotmax.y = max(d0$y,d1$y,d2$y)
+# plotmin.y = min(d0$y,d1$y,d2$y)
+# plotmax.x = max(d0$x,d1$x,d2$x)
+# plotmin.x = min(d0$x,d1$x,d2$x)
+# plot(d0,col=2,ylim=range(c(plotmin.y,plotmax.y)),
+#      xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab='TMAX')
+# lines(d1,col=1)
+# lines(d2,col=1,lty=2)
+# legend('topleft',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
+# d0 <-density(log(0.0001 + cal.array2[,4])) # gcm
+# d1 <-density(log(0.0001 + cal.array2[,6])) # obs 
+# d2 <-density(log(0.0001 + cal.array2[,5]))
+# plotmax.y = max(d0$y,d1$y,d2$y)
+# plotmin.y = min(d0$y,d1$y,d2$y)
+# plotmax.x = max(d0$x,d1$x,d2$x)
+# plotmin.x = min(d0$x,d1$x,d2$x)
+# plot(d0,col=2,ylim=range(c(plotmin.y,plotmax.y)),
+#      xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab = 'PRCP')
+# lines(d1,col=1)
+# lines(d2,col=1,lty=2)
+# legend('topright',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
+# par(mfrow=c(1,1))
 # dev.off()
 
 for(loc in 1:25){
@@ -186,26 +227,26 @@ for(mnth in 1:1)
         pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
     }
 # pdf(paste0('plots/summaries_','SE','_validation.pdf'),width = 8,height = 4)
-par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-
-lim_min = floor(min(pred_summaries[,7:9],na.rm = T))
-lim_max = ceiling(max(pred_summaries[,7:9],na.rm = T))
-plot(pred_summaries[,8:7],xlab='Model',ylab = 'Observed',pch=20,main = paste('SE','TMAX'),
-     ylim=c(lim_min,lim_max),xlim=c(lim_min,lim_max),cex=0.75)
-points(pred_summaries[,c(7,9)],pch=1,col=2,cex=0.75)
-points(pred_summaries[,8:7],pch=20,col=1,cex=0.75)
-abline(0,1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-
-lim_min = floor(min(pred_summaries[,4:6],na.rm = T))
-lim_max = ceiling(max(pred_summaries[,4:6],na.rm = T))
-plot(pred_summaries[,5:4],xlab='Model',ylab = 'Observed',pch=20,main = paste('SE','PRCP'),
-     ylim=c(lim_min,lim_max),xlim=c(lim_min,lim_max),cex=0.75)
-points(pred_summaries[,c(6,4)],pch=1,col=2,cex=0.75)
-points(pred_summaries[,5:4],pch=20,cex=0.75,col=1)
-abline(0,1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-par(mfrow=c(1,1))
+# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+# 
+# lim_min = floor(min(pred_summaries[,7:9],na.rm = T))
+# lim_max = ceiling(max(pred_summaries[,7:9],na.rm = T))
+# plot(pred_summaries[,8:7],xlab='Model',ylab = 'Observed',pch=20,main = paste('SE','TMAX'),
+#      ylim=c(lim_min,lim_max),xlim=c(lim_min,lim_max),cex=0.75)
+# points(pred_summaries[,c(7,9)],pch=1,col=2,cex=0.75)
+# points(pred_summaries[,8:7],pch=20,col=1,cex=0.75)
+# abline(0,1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
+# 
+# lim_min = floor(min(pred_summaries[,4:6],na.rm = T))
+# lim_max = ceiling(max(pred_summaries[,4:6],na.rm = T))
+# plot(pred_summaries[,5:4],xlab='Model',ylab = 'Observed',pch=20,main = paste('SE','PRCP'),
+#      ylim=c(lim_min,lim_max),xlim=c(lim_min,lim_max),cex=0.75)
+# points(pred_summaries[,c(6,4)],pch=1,col=2,cex=0.75)
+# points(pred_summaries[,5:4],pch=20,cex=0.75,col=1)
+# abline(0,1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
+# par(mfrow=c(1,1))
 # dev.off()
 
 # rmse of upper quantiles
@@ -223,7 +264,7 @@ correls = matrix(NA,300,8)
 count = 0
 for(mnth in 1:1){
     cal.array = cal.data[[mnth]]
-    print(mnth)
+    # print(mnth)
     for(i in 1:24)
         for(j in (i+1):25){
             count = count+1
@@ -238,20 +279,20 @@ for(mnth in 1:1){
 mnth = rep(1:300,each=12)
 correls2 = correls
 # pdf(paste0('plots/spatcorr_',model.type,'_','SE','_validation.pdf'),width = 8,height = 4)
-par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-plot(correls2[,2],correls2[,3],pch=20,col=1,
-     xlab = 'Model',ylab = 'Observed')
-points(correls2[,2],correls2[,1],col=2,pch=1,cex=0.75)
-points(correls2[,2],correls2[,3],pch=20,col=1,cex=0.75)
-abline(0,1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-
-plot(correls2[,5],correls2[,6],col=1,pch=20,
-     xlab = 'Model',ylab = 'Observed',main = paste('SE','PRCP'))
-points(correls2[,5],correls2[,4],col=2,pch=1,cex=0.75)
-points(correls2[,5],correls2[,6],col=1,pch=20,cex=0.75)
-abline(0,1)
-legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
+# par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+# plot(correls2[,2],correls2[,3],pch=20,col=1,
+#      xlab = 'Model',ylab = 'Observed')
+# points(correls2[,2],correls2[,1],col=2,pch=1,cex=0.75)
+# points(correls2[,2],correls2[,3],pch=20,col=1,cex=0.75)
+# abline(0,1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
+# 
+# plot(correls2[,5],correls2[,6],col=1,pch=20,
+#      xlab = 'Model',ylab = 'Observed',main = paste('SE','PRCP'))
+# points(correls2[,5],correls2[,4],col=2,pch=1,cex=0.75)
+# points(correls2[,5],correls2[,6],col=1,pch=20,cex=0.75)
+# abline(0,1)
+# legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
 # dev.off()
 
 # spatial correlations RMSE
@@ -275,17 +316,22 @@ for(mnth in 1:1)
     }
 
 # pdf(paste0('plots/propzero_','SE','_validation.pdf'),width = 5,height = 4)
-plot(propzero[,c(2,3)],pch=20,col=1,xlab = 'Model',ylab = 'Observed',cex=0.75)
-abline(0,1)
-points(propzero[,c(1,3)],pch=1,col=2,cex=0.75)
-points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
-legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
+# plot(propzero[,c(2,3)],pch=20,col=1,xlab = 'Model',ylab = 'Observed',cex=0.75)
+# abline(0,1)
+# points(propzero[,c(1,3)],pch=1,col=2,cex=0.75)
+# points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
+# legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 # dev.off()
 
 metrics_all[10] <- mae(propzero[,3],propzero[,2])
 metrics_se[10] <- sd(propzero[,3]-propzero[,2])
 
-metrics_all
-round(metrics_all[c(1,4,2,3,5,8,10,6,7,9)],4)
-round(metrics_se[c(1,4,2,3,5,8,10,6,7,9)],4)
 
+est_matrix[,type,dataset] <- metrics_all[c(1,4,3,5,8,7,10,9)]
+se_matrix[,type,dataset] <- metrics_se[c(1,4,3,5,8,7,10,9)]
+
+print(paste(type,dataset))
+}
+
+
+save(est_matrix,se_matrix,file = 'results/sim_competing_results_train.RData')

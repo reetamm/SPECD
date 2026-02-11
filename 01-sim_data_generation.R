@@ -63,8 +63,6 @@ for(sim in 0:100){
     # Temp0 <- Temp0 + 20
     # Temp1 <- Temp1 + 20
     
-    plot(density(Temp0),xlim=c(240,290))
-    lines(density(Temp1))
     
     summary(c(Prec1))
     summary(c(Prec0))
@@ -84,6 +82,32 @@ for(sim in 0:100){
     #thresholding to 0
     Prec0[Prec0<0] = 0 
     Prec1[Prec1<0] = 0
+    
+    pdf(paste0('plots/density_sim.pdf'),width = 8, height = 4)
+    par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
+    d0 <-density(Temp0) 
+    d1 <-density(Temp1) 
+    plotmax.y = max(d0$y,d1$y)
+    plotmin.y = min(d0$y,d1$y)
+    plotmax.x = max(d0$x,d1$x)
+    plotmin.x = min(d0$x,d1$x)
+    plot(d1,col=2,ylim=range(c(plotmin.y,plotmax.y)),
+         xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab='TMAX',main=paste('TMAX'))
+    lines(d0,col=1)
+    legend('topleft',c('Mod','Obs'),col=c(2,1),lty = c(1,1),lwd=2)
+    
+    d0 <-density(log(0.0001+Prec0)) 
+    d1 <-density(log(0.0001+Prec1)) 
+    plotmax.y = max(d0$y,d1$y)
+    plotmin.y = min(d0$y,d1$y)
+    plotmax.x = max(d0$x,d1$x)
+    plotmin.x = min(d0$x,d1$x)
+    plot(d1,col=2,ylim=range(c(plotmin.y,plotmax.y)),
+         xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab = 'PRCP',main=paste('PRCP'))
+    lines(d0,col=1)
+    legend('topright',c('Mod','Obs'),col=c(2,1),lty = c(1,1),lwd=2)
+    par(mfrow=c(1,1))
+    dev.off()
     # savename <- paste0('data/simdata/',sim,'.RData')
     # save(locs,Temp0,Temp1,Prec0,Prec1,file = savename)
     if(sim==0)

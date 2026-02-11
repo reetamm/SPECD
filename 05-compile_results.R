@@ -6,7 +6,7 @@ library(GpGp)
 library(usmap)
 library(transport)
 library(gridExtra)
-region = 'SE'
+region = 'SW'
 method = 'MLE'
 model.type = 'space'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
@@ -88,7 +88,7 @@ eachmonth = rep(NA,12)
 cal.array = do.call(abind::abind,c(cal.data,along=1))
 cal.array2 = apply(cal.array, 2, c)
 
-# pdf(paste0('plots/density_',region,'_validation.pdf'),width = 8, height = 4)
+pdf(paste0('plots/density_',region,'.pdf'),width = 8, height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 d0 <-density(cal.array2[,1]) # gcm
 d1 <-density(cal.array2[,3]) # obs 
@@ -115,7 +115,7 @@ lines(d1,col=1)
 lines(d2,col=1,lty=2)
 legend('topright',c('Mod','Obs','Cal'),col=c(2,1,1),lty = c(1,1,2),lwd=2)
 par(mfrow=c(1,1))
-# dev.off()
+dev.off()
 
 wasdist = array(dim = c(25,2))
 for(loc in 1:25){
@@ -128,7 +128,7 @@ metrics_se[c(1,5)] = apply(wasdist,2,sd)
 metrics = data.frame(coords,wasdist,vecchia.order)
 
 mnth = rep(1:12,25)
-# pdf(paste0('plots/crosscorr_',model.type,'_',region,'.pdf'),width = 5,height = 4)
+pdf(paste0('plots/crosscorr_',model.type,'_',region,'.pdf'),width = 5,height = 4)
 par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 lim_min = round(min(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
 lim_max = round(max(c(y1y2.cors.0,y1y2.cors.1,y1y2.cors.2),na.rm = T),5)
@@ -138,7 +138,7 @@ points(y1y2.cors.2,y1y2.cors.1,pch=1,col=2,cex=0.75)
 points(y1y2.cors.0,y1y2.cors.1,pch=20,cex=0.75,col=1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 abline(0,1)
-# dev.off()
+dev.off()
 
 ### rmse of cross correlations
 # metrics_all[9] = sqrt(mean((y1y2.cors.0[-1] - y1y2.cors.1[-1])**2))
@@ -185,7 +185,7 @@ for(mnth in 1:12)
         pred_summaries[count,6] = quantile(cal.array[,4,loc],q2)
         pred_summaries[count,9] = quantile(cal.array[,1,loc],q1)
     }
-# pdf(paste0('plots/summaries_',region,'.pdf'),width = 8,height = 4)
+pdf(paste0('plots/summaries_',region,'.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 
 lim_min = floor(min(pred_summaries[,7:9],na.rm = T))
@@ -206,7 +206,7 @@ points(pred_summaries[,5:4],pch=20,cex=0.75,col=1)
 abline(0,1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
 par(mfrow=c(1,1))
-# dev.off()
+dev.off()
 
 # rmse of upper quantiles
 # metrics_all[8] = sqrt(mean((pred_summaries[,4]-pred_summaries[,5])**2,na.rm = T)) # prcp
@@ -236,7 +236,7 @@ mnth = rep(1:300,each=12)
 correls2 = aggregate(correls,by=list(mnth),FUN=mean)
 correls2 = correls2[,-1]
 
-# pdf(paste0('plots/spatcorr_',model.type,'_',region,'.pdf'),width = 8,height = 4)
+pdf(paste0('plots/spatcorr_',model.type,'_',region,'.pdf'),width = 8,height = 4)
 par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 plot(correls2[,2],correls2[,3],pch=20,col=1,
      xlab = 'Model',ylab = 'Observed',main = paste(region,'TMAX'))
@@ -251,7 +251,7 @@ points(correls2[,5],correls2[,4],col=2,pch=1,cex=0.75)
 points(correls2[,5],correls2[,6],col=1,pch=20,cex=0.75)
 abline(0,1)
 legend('topleft',c('Uncalibrated','Calibrated'),pch = c(1,20),col = c(2,1))
-# dev.off()
+dev.off()
 
 # spatial correlations RMSE
 # metrics_all[3] = sqrt(mean((correls[,2]-correls[,1])**2,na.rm = T))
@@ -273,13 +273,14 @@ for(mnth in 1:12)
         propzero[count,] <- apply(cal.data[[mnth]][,4:6,loc],2,function(x)mean(round(x,4)==0))        
     }
 
-# pdf(paste0('plots/propzero_',region,'_validation.pdf'),width = 5,height = 4)
+pdf(paste0('plots/propzero_',region,'.pdf'),width = 5,height = 4)
+par(mfrow=c(1,1),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 plot(propzero[,c(2,3)],pch=20,col=1,xlab = 'Model',ylab = 'Observed',cex=0.75)
 abline(0,1)
 points(propzero[,c(1,3)],pch=1,col=2,cex=0.75)
 points(propzero[,c(2,3)],pch=20,col=1,cex=0.75)
 legend('bottomright',c('Uncalibrated','Calibrated'),pch = c(1,20),col=c(2,1))
-# dev.off()
+dev.off()
 
 # metrics_all[10] <- sqrt(mean((propzero[,3]-propzero[,2])**2))
 metrics_all[10] <- mean(abs((propzero[,3]-propzero[,2])))

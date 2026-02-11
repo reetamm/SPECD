@@ -3,7 +3,7 @@ library(GpGp)
 library(SPQR)
 library(lubridate)
 library(tidyr)
-region = 'SE'
+region = 'SW'
 method = 'MLE'
 gcm.long = read.csv(paste0('data/',region,'_gcm_data.csv'))
 obs.long = read.csv(paste0('data/',region,'_obs_data.csv'))
@@ -23,9 +23,9 @@ gcm.long$grid.no <- grid.no
 obs.long$grid.no <- grid.no
 mnth = 1
 
-pdf('plots/dist_shift_SE.pdf')
+pdf('plots/dist_shift_SW_TMAX.pdf',width = 9,height = 12)
 # temperature correlations GCM
-par(mfrow=c(3,4))
+par(mfrow=c(4,3),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 for(mnth in 1:12){
 X10 = gcm.long[gcm.months==mnth & gcm.years <= 2000,c(1,5,6)]
 head(X10)
@@ -39,36 +39,34 @@ X11_long <- pivot_wider(X11,names_from = grid.no,values_from = tmax)[,-1]
 X11_cor = gdata::upperTriangle(cor(X11_long))
 length(X11_cor)
 
-plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'GCM tmax'),pch=20,cex=0.5,
+plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'TMAX'),pch=20,cex=0.75,
+     xlab = '1951-2000', ylab = '2001-2014',col='red')
+
+
+X10 = obs.long[gcm.months==mnth & gcm.years <= 2000,c(1,4,6)]
+head(X10)
+X10_long <- pivot_wider(X10,names_from = grid.no,values_from = tmax)[,-1]
+X10_cor = gdata::upperTriangle(cor(X10_long))
+length(X10_cor)
+
+X11 = obs.long[gcm.months==mnth & gcm.years > 2000,c(1,4,6)]
+head(X11)
+X11_long <- pivot_wider(X11,names_from = grid.no,values_from = tmax)[,-1]
+X11_cor = gdata::upperTriangle(cor(X11_long))
+length(X11_cor)
+
+points(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'Obs tmax'),pch=20,cex=0.75,
      xlab = '1951-2000', ylab = '2001-2014')
+
 abline(0,1)
+legend('topleft',c('Mod','Obs'),col=c(2,1),lty = c(1,1),lwd=2)
 }
 par(mfrow=c(1,1))
+dev.off()
 
-
-# temperature correlations OBS
-par(mfrow=c(3,4))
-for(mnth in 1:12){
-    X10 = obs.long[gcm.months==mnth & gcm.years <= 2000,c(1,4,6)]
-    head(X10)
-    X10_long <- pivot_wider(X10,names_from = grid.no,values_from = tmax)[,-1]
-    X10_cor = gdata::upperTriangle(cor(X10_long))
-    length(X10_cor)
-    
-    X11 = obs.long[gcm.months==mnth & gcm.years > 2000,c(1,4,6)]
-    head(X11)
-    X11_long <- pivot_wider(X11,names_from = grid.no,values_from = tmax)[,-1]
-    X11_cor = gdata::upperTriangle(cor(X11_long))
-    length(X11_cor)
-    
-    plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'Obs tmax'),pch=20,cex=0.5,
-         xlab = '1951-2000', ylab = '2001-2014')
-    abline(0,1)
-}
-par(mfrow=c(1,1))
-
+pdf('plots/dist_shift_SW_PRCP.pdf',width = 9,height = 12)
 # precip correlations GCM
-par(mfrow=c(3,4))
+par(mfrow=c(4,3),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
 for(mnth in 1:12){
     X10 = gcm.long[gcm.months==mnth & gcm.years <= 2000,c(1,4,6)]
     head(X10)
@@ -82,16 +80,9 @@ for(mnth in 1:12){
     X11_cor = gdata::upperTriangle(cor(X11_long))
     length(X11_cor)
     
-    plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'GCM prcp'),pch=20,cex=0.5,
-         xlab = '1951-2000', ylab = '2001-2014')
-    abline(0,1)
-}
-par(mfrow=c(1,1))
-
-
-# precip correlations OBS
-par(mfrow=c(3,4))
-for(mnth in 1:12){
+    plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'PRCP'),pch=20,cex=0.75,
+         xlab = '1951-2000', ylab = '2001-2014',col='red')
+   
     X10 = obs.long[gcm.months==mnth & gcm.years <= 2000,c(1,5,6)]
     head(X10)
     X10_long <- pivot_wider(X10,names_from = grid.no,values_from = pr)[,-1]
@@ -104,9 +95,11 @@ for(mnth in 1:12){
     X11_cor = gdata::upperTriangle(cor(X11_long))
     length(X11_cor)
     
-    plot(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'Obs prcp'),pch=20,cex=0.5,
+    points(X10_cor,X11_cor,xlim=c(0,1),ylim=c(0,1), main = paste(month.abb[mnth],region,'Obs prcp'),pch=20,cex=0.75,
          xlab = '1951-2000', ylab = '2001-2014')
     abline(0,1)
+    legend('topleft',c('Mod','Obs'),col=c(2,1),lty = c(1,1),lwd=2)
 }
 par(mfrow=c(1,1))
-dev.off()x
+dev.off()
+
