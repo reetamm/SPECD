@@ -56,3 +56,7 @@ rsconnect/
 /SPQR_model
 /data/simdata
 /data/simdata_csv
+/anomaly data
+.DS_Store
+data/.DS_Store
+data/.DS_Store
