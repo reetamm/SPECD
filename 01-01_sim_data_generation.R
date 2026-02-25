@@ -2,7 +2,7 @@ rm(list=ls())
 library(fields)
 library(sn)
 library(scales)
-sim=0
+sim <- 0
 for(sim in 0:100){
     set.seed(sim)
     m        <- 25          # Number of spatial locations
@@ -11,7 +11,7 @@ for(sim in 0:100){
                   3*s/m+5,  # Precip-obs
                   1*s/m+0,  # Temp-model
                   2*s/m+1)  # Precip-model  
-    locs <- expand.grid(1:5,1:5)
+    locs     <- expand.grid(1:5,1:5)
     d        <- rdist(locs)
     Omega    <- exp(-d/2)   # Spatial correlation
     rho      <- diag(4)     # Cross correlations
@@ -21,13 +21,12 @@ for(sim in 0:100){
     rho[2,3] <- rho[3,2] <- .5
     rho[2,4] <- rho[4,2] <- .5
     rho[4,3] <- rho[3,4] <- .4 # Cor(temp,prec) for model
-    ss   <- diag(c(1,-1,1,-1))
-    rho <- ss%*%rho%*%ss
+    ss       <- diag(c(1,-1,1,-1))
+    rho      <- ss%*%rho%*%ss
     
-    skew   <- c(0,100,0,10) # Skewness
-    # skep = rep(0,4)
-    df     <- 20             # Degrees of freedom
-    Smooth <- exp(-d)     # Extra smoothing for the model output
+    skew     <- c(0,100,0,10) # Skewness
+    df       <- 20             # Degrees of freedom
+    Smooth   <- exp(-d)     # Extra smoothing for the model output
     
     Sig    <- kronecker(rho,Omega)
     alpha  <- rep(skew,each=m)
@@ -83,14 +82,14 @@ for(sim in 0:100){
     Prec0[Prec0<0] = 0 
     Prec1[Prec1<0] = 0
     
-    pdf(paste0('plots/density_sim.pdf'),width = 8, height = 4)
+    # pdf(paste0('plots/density_sim.pdf'),width = 8, height = 4)
     par(mfrow=c(1,2),mgp=c(2.25,0.75,0),mar=c(4,4,1,1))
-    d0 <-density(Temp0) 
-    d1 <-density(Temp1) 
-    plotmax.y = max(d0$y,d1$y)
-    plotmin.y = min(d0$y,d1$y)
-    plotmax.x = max(d0$x,d1$x)
-    plotmin.x = min(d0$x,d1$x)
+    d0 <- density(Temp0) 
+    d1 <- density(Temp1) 
+    plotmax.y <- max(d0$y,d1$y)
+    plotmin.y <- min(d0$y,d1$y)
+    plotmax.x <- max(d0$x,d1$x)
+    plotmin.x <- min(d0$x,d1$x)
     plot(d1,col=2,ylim=range(c(plotmin.y,plotmax.y)),
          xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab='TMAX',main=paste('TMAX'))
     lines(d0,col=1)
@@ -98,16 +97,16 @@ for(sim in 0:100){
     
     d0 <-density(log(0.0001+Prec0)) 
     d1 <-density(log(0.0001+Prec1)) 
-    plotmax.y = max(d0$y,d1$y)
-    plotmin.y = min(d0$y,d1$y)
-    plotmax.x = max(d0$x,d1$x)
-    plotmin.x = min(d0$x,d1$x)
+    plotmax.y <- max(d0$y,d1$y)
+    plotmin.y <- min(d0$y,d1$y)
+    plotmax.x <- max(d0$x,d1$x)
+    plotmin.x <- min(d0$x,d1$x)
     plot(d1,col=2,ylim=range(c(plotmin.y,plotmax.y)),
          xlim=range(c(plotmin.x,plotmax.x)),ylab="Density",xlab = 'PRCP',main=paste('PRCP'))
     lines(d0,col=1)
     legend('topright',c('Mod','Obs'),col=c(2,1),lty = c(1,1),lwd=2)
     par(mfrow=c(1,1))
-    dev.off()
+    # dev.off()
     # savename <- paste0('data/simdata/',sim,'.RData')
     # save(locs,Temp0,Temp1,Prec0,Prec1,file = savename)
     if(sim==0)
